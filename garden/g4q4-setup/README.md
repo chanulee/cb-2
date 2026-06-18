@@ -1,18 +1,19 @@
 # Gemma 4 E4B local LLM on Jetson Orin Nano Super
 
-This directory contains a beginner-friendly, all-in-one setup guide and automation script to run Google's **Gemma 4 E4B GGUF** local Large Language Model (LLM) on your **NVIDIA Jetson Orin Nano Super Developer Kit** (8GB unified memory, 67 TOPS).
+Setup guide + automation script to run Google's **Gemma 4 E4B GGUF** model on your **NVIDIA Jetson Orin Nano Super Developer Kit** (8GB unified memory, 67 TOPS).
 
-We use a custom compiled build of `llama.cpp` targeting the Orin's Ampere GPU to get full hardware acceleration.
+I'm using a custom compiled build of `llama.cpp` targeting the Orin's Ampere GPU to get full hardware acceleration.
+Using Q4 model instead of Q8 - Ref [this video](https://www.youtube.com/watch?v=EGnA_kqu3is&list=WL&index=5)
 
----
-
-## ⚡ Quick Start: One-Command Installation
+## Quick Start: One-Command Installation
 
 To install everything, simply open your terminal, navigate to this folder, and run:
 
 ```bash
 ./install.sh
 ```
+
+This was tested on JetPack 7.2. If you have to set up your Jetpack, check the official setup guide by [NVIDIA](https://docs.nvidia.com/jetson/orin-nano-devkit/user-guide/latest/quick_start.html#overview)
 
 ### What the installer does:
 1.  **Configures 8GB Swap Space**: Crucial for Orin's 8GB unified memory to prevent out-of-memory crashes.
@@ -24,9 +25,7 @@ To install everything, simply open your terminal, navigate to this folder, and r
     *   Ampere Architecture Targeting (`CMAKE_CUDA_ARCHITECTURES=87`)
 5.  **Downloads the Model**: Downloads the `gemma-4-E4B-it-Q4_K_M.gguf` (~4.7GB) model from Hugging Face.
 
----
-
-## 🚀 Running the Local LLM Server
+## Running the Local LLM Server
 
 Once installation is finished, start your local server by running:
 
@@ -35,12 +34,10 @@ Once installation is finished, start your local server by running:
 ```
 
 ### Accessing your LLM:
-*   **Web Chat UI**: Open your web browser and go to **`http://localhost:8080`**. It has a built-in interactive chat interface!
+*   **Web Chat UI**: Open your web browser and go to **`http://localhost:8080`**. It has a built-in interactive chat interface.
 *   **API Server**: The port `8080` acts as an OpenAI-compatible API server. You can connect it to other apps (like Open WebUI, LlamaIndex, or LangChain) using `http://localhost:8080/v1`.
 
----
-
-## 🛠️ Customization & Advanced Tuning
+## Customization & Advanced Tuning
 
 The runner script (`run.sh`) is configured with conservative settings to ensure 100% stability on an 8GB memory footprint. You can tune these settings easily by editing the script:
 
@@ -62,18 +59,21 @@ Unsloth provides a Quantization-Aware Trained (QAT) model that provides higher r
 ### 2. Increase Context Size (4096 vs. 8192)
 A larger context window increases memory use due to the KV cache. If your memory headroom allows, you can change `CTX_SIZE=4096` to `CTX_SIZE=8192` in `run.sh`.
 
----
-
-## 📊 Monitoring Resources
+## Monitoring Resources
 Since Jetson uses unified memory, you should monitor your hardware load. Open a separate terminal and run:
 ```bash
 tegrastats
 ```
 This shows real-time GPU load, CPU core usage, swap usage, and physical memory footprint.
 
----
+Also, we can optimise RAM by turning off the GUI mode of Jetpack according to https://www.jetson-ai-lab.com/tutorials/ram-optimization/ :
+```bash
+sudo init 3     # stop the desktop
+# log your user back into the console (Ctrl+Alt+F1, F2, etc.)
+sudo init 5     # restart the desktop
+```
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
 *   **Server starts but crashes when prompt is sent**: This is an Out of Memory (OOM) crash. Ensure your Swap space is active by running `swapon --show`. If it is active and still crashes, decrease your context size (`CTX_SIZE`) in `run.sh` to `2048` or `3072`.
 *   **Response generation is extremely slow**: Make sure `llama.cpp` compiled with CUDA support. When launching `./run.sh`, look for the print line:
