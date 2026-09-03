@@ -1,1 +1,22 @@
 .DS_Store
+
+# BLOOM v1 local development state. Legacy Pony files remain visible so the
+# pond/ -> pony/ rename preserves every tracked prototype artifact.
+v1/**/.env
+v1/**/.venv/
+v1/**/__pycache__/
+v1/**/*.py[cod]
+v1/**/.pytest_cache/
+
+# ESP-IDF / PlatformIO build output
+build/
+.pio/
+managed_components/
+dependencies.lock
+sdkconfig
+sdkconfig.old
+
+# BLOOM v1 Garden runtime data and private media
+v1/**/.bloom-data/
+v1/**/debug_audio/
+v1/**/*.wav

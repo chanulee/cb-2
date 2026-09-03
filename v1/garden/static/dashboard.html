@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Garden monitor · BLOOM</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root { color-scheme:dark; font:15px Inter,system-ui,sans-serif; background:#0c1110; color:#edf2ef; }
+    * { box-sizing:border-box; }
+    body { margin:0; padding:32px; }
+    main { width:min(1100px,100%); margin:auto; }
+    header { display:flex; align-items:end; justify-content:space-between; margin-bottom:24px; }
+    h1 { margin:4px 0 0; font-size:34px; }
+    .eyebrow { margin:0; color:#87dfe4; font-size:11px; letter-spacing:.17em; }
+    .state { padding:8px 13px; border:1px solid #3d4d49; border-radius:999px; color:#9baaa6; }
+    .state.ready { border-color:#87dfe4; color:#87dfe4; }
+    .panel,.card { background:#151c1a; border:1px solid #2d3a37; border-radius:18px; }
+    .controls { padding:16px; display:grid; grid-template-columns:1fr 140px auto auto auto; gap:10px; }
+    select,button { min-height:44px; border:1px solid #40514d; border-radius:12px; background:#202927; color:inherit; padding:0 13px; font:inherit; }
+    button { cursor:pointer; font-weight:700; }
+    button.primary { background:#9de7ed; border-color:#9de7ed; color:#071110; }
+    button:disabled { opacity:.35; cursor:default; }
+    #message { min-height:24px; margin:10px 5px 18px; color:#f0a899; font-size:13px; }
+    .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+    .card { padding:17px; min-height:122px; }
+    .card span { color:#81918c; font-size:12px; }
+    .card b { display:block; margin:12px 0 8px; font-size:28px; font-weight:650; }
+    .card small { color:#9fb0ab; }
+    progress { width:100%; height:5px; border:0; accent-color:#9de7ed; }
+    .detail { margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .detail .panel { padding:18px; min-height:250px; }
+    h2 { margin:0 0 14px; font-size:15px; }
+    pre { margin:0; height:210px; overflow:auto; white-space:pre-wrap; color:#a9b8b3; font:11px/1.5 ui-monospace,monospace; }
+    #test-output { color:#cbd7d3; line-height:1.55; }
+    .raw { margin-top:16px; color:#65736f; font:10px/1.4 ui-monospace,monospace; overflow-wrap:anywhere; }
+    a { color:#87dfe4; }
+    @media(max-width:800px) { body{padding:18px}.controls{grid-template-columns:1fr 110px}.controls button{grid-column:auto}.metrics{grid-template-columns:1fr 1fr}.detail{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div><p class="eyebrow">BLOOM · GARDEN</p><h1>Model monitor</h1></div>
+      <span id="state" class="state">stopped</span>
+    </header>
+
+    <section class="panel controls">
+      <select id="model" aria-label="Model"></select>
+      <select id="context" aria-label="Context size"><option value="2048">2K context</option><option value="4096">4K context</option></select>
+      <button id="start" class="primary">Start</button>
+      <button id="stop">Stop</button>
+      <button id="benchmark">Speed test</button>
+    </section>
+    <div id="message"></div>
+
+    <section class="metrics">
+      <article class="card"><span>System RAM</span><b id="ram">—</b><progress id="ram-bar" max="100" value="0"></progress><small id="process-ram">server —</small></article>
+      <article class="card"><span>Generation</span><b id="generation">— tok/s</b><small id="tokens">0 generated tokens</small></article>
+      <article class="card"><span>GPU / CPU</span><b id="compute">—</b><small id="temperature">—</small></article>
+      <article class="card"><span>Power / Swap</span><b id="power">—</b><small id="swap">—</small></article>
+    </section>
+
+    <section class="detail">
+      <article class="panel"><h2>llama-server log</h2><pre id="log">Waiting for server…</pre></article>
+      <article class="panel"><h2>Latest speed test</h2><p id="test-output">Start a model, wait for ready, then run the fixed 32-token test.</p><p id="raw" class="raw"></p></article>
+    </section>
+  </main>
+  <script>
+    const $ = id => document.getElementById(id);
+    let busy = false, populated = false;
+    const number = (value, suffix='') => Number.isFinite(value) ? `${Math.round(value * 10) / 10}${suffix}` : `—${suffix}`;
+
+    async function request(path, body={}) {
+      const response = await fetch(path, {method:'POST', headers:{'Content-Type':'application/json','X-Bloom-Control':'1'}, body:JSON.stringify(body)});
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `Request failed: ${response.status}`);
+      return data;
+    }
+
+    function render(data) {
+      const system = data.system || {}, metrics = data.metrics || {};
+      $('state').textContent = data.state;
+      $('state').className = `state ${data.state}`;
+      if (!populated) {
+        data.models.forEach(item => $('model').add(new Option(`${item.name} · ${item.size_mb} MB`, item.name)));
+        const preferred = data.models.find(item => item.name.includes('E2B-it-Q4'));
+        if (preferred) $('model').value = preferred.name;
+        populated = true;
+      }
+      if (data.model) $('model').value = data.model;
+      $('context').value = String(data.context || 2048);
+      const used = system.ram_used_mb, total = system.ram_total_mb;
+      $('ram').textContent = Number.isFinite(used) ? `${used} / ${total} MB` : '—';
+      $('ram-bar').value = used && total ? used / total * 100 : 0;
+      $('process-ram').textContent = `llama-server ${data.process_rss_mb || 0} MB`;
+      $('generation').textContent = number(metrics.predicted_tokens_seconds, ' tok/s');
+      $('tokens').textContent = `${Math.round(metrics.tokens_predicted_total || 0)} generated tokens · prompt ${number(metrics.prompt_tokens_seconds, ' tok/s')}`;
+      $('compute').textContent = `${number(system.gpu, '%')} GPU`;
+      $('temperature').textContent = `${number(system.cpu, '%')} CPU · ${number(system.temp, '°C')}`;
+      $('power').textContent = number(system.power ? system.power / 1000 : NaN, ' W');
+      $('swap').textContent = Number.isFinite(system.swap_used_mb) ? `${system.swap_used_mb} / ${system.swap_total_mb} MB swap` : '—';
+      $('log').textContent = (data.log || []).filter(line => !line.includes('all slots are idle')).join('\n') || (data.state === 'ready' ? 'Server is ready.' : 'Waiting for server…');
+      $('log').scrollTop = $('log').scrollHeight;
+      $('raw').textContent = system.raw || '';
+      if (metrics.predicted_tokens_seconds && $('test-output').textContent.startsWith('Start a model')) {
+        $('test-output').textContent = `Last measured: ${number(metrics.predicted_tokens_seconds, ' tok/s')} generation · ${number(metrics.prompt_tokens_seconds, ' tok/s')} prompt`;
+      }
+      const running = ['loading','ready'].includes(data.state);
+      $('start').disabled = busy || running;
+      $('stop').disabled = busy || !running;
+      $('benchmark').disabled = busy || data.state !== 'ready';
+      $('model').disabled = busy || running;
+      $('context').disabled = busy || running;
+    }
+
+    async function poll() {
+      try { render(await (await fetch('/api/llama/status',{cache:'no-store'})).json()); }
+      catch (error) { $('message').textContent = error.message; }
+    }
+
+    async function action(work) {
+      busy = true; $('message').textContent = '';
+      try { await work(); }
+      catch (error) { $('message').textContent = error.message; }
+      finally { busy = false; await poll(); }
+    }
+
+    $('start').onclick = () => action(() => request('/api/llama/start',{model:$('model').value,context:Number($('context').value)}));
+    $('stop').onclick = () => action(() => request('/api/llama/stop'));
+    $('benchmark').onclick = () => action(async () => {
+      $('test-output').textContent = 'Running…';
+      const result = await request('/api/llama/benchmark');
+      $('test-output').textContent = `${result.seconds}s — ${result.text || 'speed test completed'}`;
+    });
+    poll(); setInterval(poll,1000);
+  </script>
+</body>
+</html>

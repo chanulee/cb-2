@@ -1,5 +1,9 @@
 # Setup Walkthrough: Gemma 4 E4B on Jetson Orin Nano Super
 
+> Historical E4B bring-up record. The maintained setup now defaults to E2B
+> Q4_K_M; see [README.md](README.md). The measurements below are kept as the
+> original E4B baseline.
+
 We have successfully configured and verified local LLM execution of the **Gemma 4 E4B GGUF** model using a custom, GPU-accelerated build of `llama.cpp` on your Jetson Orin Nano Super Developer Kit (8GB unified memory, Ubuntu 24.04).
 
 ---

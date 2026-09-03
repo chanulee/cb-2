@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>BLOOM proof</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/styles.css?v=5">
+</head>
+<body>
+  <main>
+    <section class="device" aria-label="Pond simulator">
+      <div class="screen">
+        <div id="screen-content">
+          <div id="springboard" class="springboard" aria-label="Pond springboard">
+            <button id="open-pond" class="app-tile"><span>◌</span>Pond</button>
+            <button id="open-particles" class="app-tile"><span>✣</span>Particles</button>
+            <button id="open-settings" class="app-tile"><span>⚙</span>Settings</button>
+          </div>
+
+          <div id="pond-app" class="app pond-app" hidden>
+            <div id="word" class="word"></div>
+            <p id="hint">waiting for Garden</p>
+          </div>
+
+          <div id="particles-app" class="app particles-app" hidden>
+            <canvas id="particles" width="466" height="466" aria-label="Touch and microphone particles"></canvas>
+            <button id="particle-mic" class="particle-mic">Enable mic</button>
+            <small>Touch · sound</small>
+          </div>
+
+          <div id="settings" class="app settings" hidden>
+            <section class="brightness-setting">
+              <div class="setting-heading"><span>Brightness</span><output id="brightness-output">80%</output></div>
+              <input id="brightness" type="range" min="20" max="100" step="5" value="80">
+            </section>
+            <button id="open-network" class="network-row">
+              <span><b>Wi-Fi</b><small id="network-summary">Choose a network</small></span><i>›</i>
+            </button>
+            <section class="rotation-setting">
+              <span>Rotation</span>
+              <div id="rotation" class="segments" role="group" aria-label="Screen rotation">
+                <button data-rotation="0" aria-pressed="true">0°</button>
+                <button data-rotation="90" aria-pressed="false">90°</button>
+                <button data-rotation="180" aria-pressed="false">180°</button>
+                <button data-rotation="270" aria-pressed="false">270°</button>
+              </div>
+            </section>
+          </div>
+
+          <div id="network-scan" class="app network-scan" hidden>
+            <div class="network-title"><span>Wi-Fi</span><button id="rescan" aria-label="Scan again">↻</button></div>
+            <div id="network-list" class="network-list" aria-live="polite"></div>
+          </div>
+
+          <div id="network-edit" class="app network-edit" hidden>
+            <div class="credential-fields">
+              <input id="ssid" aria-label="Network name" placeholder="Network" readonly>
+              <input id="wifi-password" aria-label="Password" type="password" placeholder="Password" readonly>
+              <input id="garden-address" aria-label="Garden address" placeholder="Garden hostname (bloom.local)" readonly>
+            </div>
+            <div id="keyboard" class="keyboard" aria-label="English keyboard"></div>
+            <button id="save-network" class="save">Connect</button>
+          </div>
+        </div>
+      </div>
+      <p class="gesture-note">Swipe right to go back</p>
+    </section>
+
+    <section class="controls">
+      <p class="eyebrow">ONE WORKING LOOP</p>
+      <h1>BLOOM</h1>
+      <p>Open Pond, hear the inner voice, speak, then explicitly finish.</p>
+      <label>Temporary transcript until local STT is connected
+        <textarea id="transcript" rows="3">I made time for a quiet walk today.</textarea>
+      </label>
+      <button id="record" disabled>Start speaking</button>
+      <p id="result">Garden and Pond are idle.</p>
+      <a class="dashboard-link" href="/dashboard">Open Garden dashboard →</a>
+    </section>
+  </main>
+  <script src="/app.js?v=5"></script>
+</body>
+</html>

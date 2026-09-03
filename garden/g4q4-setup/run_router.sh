@@ -2,7 +2,7 @@
 # run_router.sh - Starts the llama.cpp server in Router Mode to allow switching models in the GUI
 set -euo pipefail
 
-SCRATCH_DIR="/home/chanwoo/.gemini/antigravity/scratch"
+SCRATCH_DIR="${BLOOM_SCRATCH_DIR:-$HOME/.gemini/antigravity/scratch}"
 LLAMA_SERVER_BIN="$SCRATCH_DIR/llama.cpp/build/bin/llama-server"
 MODEL_DIR="$SCRATCH_DIR/models"
 
@@ -16,7 +16,7 @@ echo "   Starting llama-server in ROUTER MODE on Jetson Orin Nano Super"
 echo "   Models directory: $MODEL_DIR"
 echo "   Web UI:           http://localhost:8080"
 echo "================================================================="
-echo "   Select your model (E4B Q4_K_M or E2B Q8_0) from the dropdown"
+echo "   Select E2B Q4_K_M (default), E2B Q8_0, or E4B Q4_K_M"
 echo "   in the Web UI chat interface."
 echo "================================================================="
 echo "Use Ctrl+C to stop the server."
@@ -30,6 +30,8 @@ exec "$LLAMA_SERVER_BIN" \
   --port 8080 \
   --models-dir "$MODEL_DIR" \
   --n-gpu-layers 99 \
+  --flash-attn on \
+  --parallel 1 \
   --threads 6 \
   --batch-size 128 \
   --ubatch-size 64

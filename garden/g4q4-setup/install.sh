@@ -1,22 +1,21 @@
 #!/usr/bin/env bash
-# install.sh - All-in-one setup and installer script for Gemma 4 E4B on Jetson Orin Nano Super
+# install.sh - Gemma 4 E2B setup for Jetson Orin Nano Super
 # Run as a regular user. The script will prompt for sudo password when necessary.
 set -euo pipefail
 
 # Directories
-SCRATCH_DIR="/home/chanwoo/.gemini/antigravity/scratch"
-SETUP_DIR="$SCRATCH_DIR/g4q4-setup"
+SCRATCH_DIR="${BLOOM_SCRATCH_DIR:-$HOME/.gemini/antigravity/scratch}"
 MODEL_DIR="$SCRATCH_DIR/models"
+VENV_DIR="$SCRATCH_DIR/hf-venv"
 
 echo "================================================================="
-echo "   Jetson Orin Nano Super - Gemma 4 E4B Local LLM Installer"
+echo "   Jetson Orin Nano Super - Gemma 4 E2B Local LLM Installer"
 echo "================================================================="
 echo "This script will:"
 echo " 1. Configure 8GB Swap Space (crucial for 8GB RAM systems)"
 echo " 2. Install CUDA Toolkit 13.2 & development dependencies"
-echo " 3. Install Homebrew (Linuxbrew)"
-echo " 4. Build llama.cpp from source with Orin-specific GPU acceleration"
-echo " 5. Download Gemma 4 E4B Q4_K_M model (~4.7GB)"
+echo " 3. Build llama.cpp from source with Orin-specific GPU acceleration"
+echo " 4. Download Gemma 4 E2B Q4_K_M model (~3.1GB)"
 echo "================================================================="
 read -p "Press Enter to start installation..."
 
@@ -29,7 +28,7 @@ fi
 
 echo ""
 echo "-----------------------------------------------------------------"
-echo "Step 1/5: Configuring 8GB Swap Space"
+echo "Step 1/4: Configuring 8GB Swap Space"
 echo "-----------------------------------------------------------------"
 if [ -f /swapfile ]; then
     echo "Swapfile /swapfile already exists. Skipping."
@@ -46,7 +45,7 @@ swapon --show
 
 echo ""
 echo "-----------------------------------------------------------------"
-echo "Step 2/5: Installing System Dependencies & CUDA Toolkit"
+echo "Step 2/4: Installing System Dependencies & CUDA Toolkit"
 echo "-----------------------------------------------------------------"
 sudo apt-get update
 sudo apt-get install -y \
@@ -69,28 +68,9 @@ fi
 
 echo ""
 echo "-----------------------------------------------------------------"
-echo "Step 3/5: Installing Homebrew"
+echo "Step 3/4: Compiling llama.cpp with GPU Acceleration"
 echo "-----------------------------------------------------------------"
-# Auto-load Homebrew if already installed
-if [ -f "/home/linuxbrew/.linuxbrew/bin/brew" ]; then
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-fi
-
-if command -v brew &>/dev/null; then
-    echo "Homebrew is already installed."
-else
-    echo "Installing Homebrew..."
-    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    
-    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"' >> "$HOME/.bashrc"
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
-    echo "Homebrew installed successfully!"
-fi
-
-echo ""
-echo "-----------------------------------------------------------------"
-echo "Step 4/5: Compiling llama.cpp with GPU Acceleration"
-echo "-----------------------------------------------------------------"
+mkdir -p "$SCRATCH_DIR"
 cd "$SCRATCH_DIR"
 if [ -d llama.cpp ]; then
     echo "llama.cpp repository already exists. Updating..."
@@ -105,30 +85,29 @@ fi
 echo "Configuring and compiling llama.cpp for Jetson Orin (Ampere/87)..."
 cmake -B build \
   -DGGML_CUDA=ON \
-  -DGGML_CUDA_F16=ON \
-  -DGGML_CUDA_FA_ALL_QUANTS=ON \
+  -DGGML_NATIVE=ON \
   -DLLAMA_CURL=ON \
-  -DCMAKE_CUDA_ARCHITECTURES=87
+  -DCMAKE_CUDA_ARCHITECTURES=87 \
+  -DCMAKE_BUILD_TYPE=Release
 
 cmake --build build --config Release --parallel 6
 echo "llama.cpp compiled successfully with CUDA!"
 
 echo ""
 echo "-----------------------------------------------------------------"
-echo "Step 5/5: Downloading Gemma 4 E4B Q4_K_M GGUF Model"
+echo "Step 4/4: Downloading Gemma 4 E2B Q4_K_M GGUF Model"
 echo "-----------------------------------------------------------------"
 mkdir -p "$MODEL_DIR"
-cd "$SETUP_DIR"
 
-if [ ! -d venv ]; then
-    python3 -m venv venv
+if [ ! -d "$VENV_DIR" ]; then
+    python3 -m venv "$VENV_DIR"
 fi
-source venv/bin/activate
+source "$VENV_DIR/bin/activate"
 pip install -U pip
 pip install -U "huggingface_hub[cli]"
 
-echo "Downloading gemma-4-E4B-it-Q4_K_M.gguf from unsloth/gemma-4-E4B-it-GGUF..."
-hf download unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf --local-dir "$MODEL_DIR"
+echo "Downloading gemma-4-E2B-it-Q4_K_M.gguf from unsloth/gemma-4-E2B-it-GGUF..."
+hf download unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-Q4_K_M.gguf --local-dir "$MODEL_DIR"
 
 echo ""
 echo "================================================================="
