@@ -28,6 +28,22 @@ Run Garden and open <http://127.0.0.1:8765/dashboard>. It discovers installed
 GGUF files, runs exactly one managed llama-server, and shows live Jetson RAM,
 swap, CPU/GPU, temperature, power, logs, and llama.cpp token speed.
 
+## Garden display
+
+<http://127.0.0.1:8765/garden> is the idle visual for Garden's round 5–7"
+screen: a plant seen through a round window, grown from Pond conversations.
+
+- Every finished Pond turn is appended to `~/.bloom/garden.jsonl`
+  (`BLOOM_GARDEN_DIR` overrides); `/api/garden` groups it by day with topics.
+- Past days are side branches up the stem, oldest lowest. Older days abstract
+  like a summarised context: cooler, paler, fewer forks, and past two weeks
+  they dissolve into DLA dust (fogleman/dlaf).
+- Today grows a three-level crown (topic → facets → twigs with buds) and one
+  nonflowers-style flower at the top.
+- Drag up/down (or wheel / arrow keys) to walk back through days; tap a branch
+  to focus that day; it returns to today after 25 s. With no history yet, or
+  with `?demo`, it shows a sample garden.
+
 ## Run the UI without inference
 
 ```bash

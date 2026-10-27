@@ -10,6 +10,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
+from datetime import date, datetime
+
+from . import journal
 from .inference import reflect, transcribe
 from .runtime import Runtime
 from .session import next_turn, opening_turn
@@ -47,11 +50,15 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/health":
             self.json({"ok": True, "flow": "Pond WAV -> whisper.cpp -> Gemma 4"})
             return
+        if path == "/api/garden":
+            self.json({"today": date.today().isoformat(), "days": journal.days(journal.load(), date.today())})
+            return
         if path == "/api/start":
             self.json(opening_turn().to_dict())
             return
 
-        relative = "index.html" if path == "/" else "dashboard.html" if path == "/dashboard" else path.lstrip("/")
+        pages = {"/": "index.html", "/dashboard": "dashboard.html", "/garden": "garden.html"}
+        relative = pages.get(path, path.lstrip("/"))
         file = safe_file(relative)
         if file is None:
             self.send_error(HTTPStatus.NOT_FOUND)
@@ -82,7 +89,10 @@ class Handler(BaseHTTPRequestHandler):
             audio = self.rfile.read(length)
             transcript = transcript.strip() or transcribe(audio)
             generated_prompt = reflect(transcript)
-            self.json(next_turn(prompt_index, transcript, len(audio), generated_prompt).to_dict())
+            turn = next_turn(prompt_index, transcript, len(audio), generated_prompt)
+            if turn.transcript:
+                journal.append(journal.entry(turn.transcript, turn.prompt, datetime.now()))
+            self.json(turn.to_dict())
         except (TypeError, ValueError) as error:
             self.json({"error": str(error)}, HTTPStatus.BAD_REQUEST)
         except (OSError, RuntimeError, KeyError, IndexError) as error:
