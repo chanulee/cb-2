@@ -46,6 +46,16 @@ screen: a plant seen through a round window, grown from Pond conversations.
   recurring patterns share a hue across days; the strongest memories (recurrence
   weighted by recency) sit on the window rim, and today's flower takes the
   colour of the strongest memory it touched. Background light follows today's mood.
+- Code is split into the skeleton (`static/garden-model.js`: data → plant →
+  shapes), swappable looks (`static/garden-styles.js`) and the app/GUI
+  (`static/garden.js`). Branches grow as turtle paths bent by tropism and
+  droop, laterals sprout from nodes along their parent, and thickness follows
+  the pipe model.
+- Styles: **Ink** (dark glass), **Paper** (watercolour: each shape warped and
+  stacked in low-opacity layers under a graphite line; compressed days keep
+  only the pencil), **Signal** (WebGL pass: lens, glow, ordered dither,
+  scanlines). Open the ◐ button or press `g` for the panel; `?style=paper`
+  picks one from the URL. Settings persist in the browser.
 - Drag up/down (or wheel / arrow keys) to walk back through days; tap a branch
   to read that day at its stored fidelity; tap a rim memory to light up every
   day it appeared in. It returns to today after 25 s.
