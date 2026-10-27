@@ -4,16 +4,13 @@
 const view = document.querySelector('#window');
 const canvas = document.querySelector('#garden');
 const ctx = canvas.getContext('2d');
-const signalCanvas = document.querySelector('#signal');
-const scene = document.createElement('canvas');
-const sceneCtx = scene.getContext('2d');
 const params = new URLSearchParams(location.search);
 const gui = document.querySelector('#gui');
 
 const DEFAULTS = Object.freeze({
   style: 'ink', wind: 1, labels: true,
   layers: 8, opacity: 8, warp: 6, boil: 4,
-  pixel: 2, levels: 4, glow: 1, aberration: 1.2, scanlines: 0.4,
+  spacing: 1, glow: 4, grain: 0.16,
 });
 
 function loadSettings() {
@@ -24,7 +21,8 @@ function loadSettings() {
     saved = {};
   }
   const style = params.get('style');
-  return { ...DEFAULTS, ...saved, ...(STYLES[style] ? { style } : {}) };
+  const result = { ...DEFAULTS, ...saved, ...(STYLES[style] ? { style } : {}) };
+  return STYLES[result.style] ? result : { ...result, style: DEFAULTS.style };
 }
 
 let settings = loadSettings();
@@ -34,7 +32,6 @@ let lastInput = 0;
 let lastRender = -1;
 let dirty = true;
 let rimHits = [];
-let signalRender = null;
 const time0 = performance.now();
 const clock = () => (performance.now() - time0) / 1000;
 
@@ -61,7 +58,7 @@ function paint(target, now) {
   layout(model, now, settings.wind);
   const boil = Math.floor(now * settings.boil);
   style.draw(c, collect(model, now, focus), settings, boil, model);
-  if (settings.labels) drawLabels(c, model, focus, style.text);
+  if (settings.labels && style.labels !== false) drawLabels(c, model, focus, style.text);
   style.window(c, model, now);
   rimHits = drawRim(c, model, focus, style.text);
   drawCaption(c, model, focus, style.text);
@@ -81,27 +78,13 @@ function frame() {
   if (dirty || now - lastRender >= interval) {
     dirty = false;
     lastRender = now;
-    if (style.shader && signalRender) {
-      paint(scene, now);
-      signalRender(scene, now, settings);
-    } else {
-      paint(canvas, now);
-    }
+    model.grain = settings.grain;
+    paint(canvas, now);
   }
   requestAnimationFrame(frame);
 }
 
 function showStyle() {
-  const shader = STYLES[settings.style].shader;
-  if (shader && !signalRender) {
-    try {
-      signalRender = signalPass(signalCanvas.getContext('webgl', { preserveDrawingBuffer: true }));
-    } catch (error) {
-      console.warn('Signal shader unavailable, using its 2D pass only', error);
-    }
-  }
-  signalCanvas.hidden = !(shader && signalRender);
-  canvas.hidden = !signalCanvas.hidden;
   gui.querySelectorAll('fieldset[data-style]').forEach((set) => { set.hidden = set.dataset.style !== settings.style; });
   dirty = true;
 }
@@ -144,7 +127,7 @@ function resize() {
   const size = Math.min(innerWidth, innerHeight);
   const pixels = Math.round(size * Math.min(devicePixelRatio || 1, 2));
   view.style.width = view.style.height = `${size}px`;
-  for (const target of [canvas, signalCanvas, scene]) target.width = target.height = pixels;
+  canvas.width = canvas.height = pixels;
   dirty = true;
 }
 

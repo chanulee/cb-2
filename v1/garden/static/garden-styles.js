@@ -3,7 +3,7 @@
 // - paper: watercolour by warping and stacking low-opacity layers (Tyler
 //   Hobbs' technique, the idea behind p5.brush's fills) with a graphite line;
 //   older, compressed days lose their washes and remain only as pencil
-// - signal: phosphor shapes, then a WebGL pass (lens, glow, dither, scanlines)
+// - words: the plant written in its own conversation, behind grainy glass
 
 function trace(ctx, pts) {
   ctx.beginPath();
@@ -282,56 +282,167 @@ function circle(x, y, r, n = 14) {
   return Array.from({ length: n }, (_, i) => [x + Math.cos(i / n * Math.PI * 2) * r, y + Math.sin(i / n * Math.PI * 2) * r]);
 }
 
-// ---------- signal: phosphor shapes for the shader ----------
+// ---------- words: the plant written in its own conversation ----------
 
-const signal = {
-  shader: true,
-  text: { main: [140, 70, 72], sub: [140, 40, 58], serif: 'ui-monospace, Menlo, monospace', mono: 'ui-monospace, Menlo, monospace', memory: 66, upper: true },
-  background(ctx) {
-    ctx.fillStyle = '#030605';
-    ctx.fillRect(0, 0, W, W);
-    ctx.strokeStyle = 'rgba(80, 200, 140, .09)';
-    ctx.lineWidth = 1;
-    for (let r = 100; r < W / 2; r += 100) {
-      ctx.beginPath();
-      ctx.arc(W / 2, W / 2, r, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    ctx.beginPath();
-    ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, W);
-    ctx.moveTo(0, W / 2); ctx.lineTo(W, W / 2);
-    ctx.stroke();
+// Each day speaks with the words it still has: today its full answers,
+// yesterday its summary, then its gist, then only its memory keywords.
+function vocabulary(model, index) {
+  model.vocabulary ??= {};
+  if (model.vocabulary[index]) return model.vocabulary[index];
+  const day = model.days[index];
+  let text = '';
+  if (day) {
+    const memory = (day.threads || []).flatMap((thread) => thread.memory || [])
+      .map((key) => model.memory.find((item) => item.key === key)?.label || key);
+    if (day.compression === 'raw') text = (day.lines || []).join(' ');
+    else if (day.compression === 'summary') text = day.summary || '';
+    else if (day.compression === 'gist') text = day.gist || '';
+    else text = memory.join(' ');
+    text += ` ${(day.threads || []).map((thread) => thread.topic).join(' ')}`;
+  }
+  const list = text.toLowerCase().replace(/[^a-z가-힣' ]/g, ' ').split(/\s+/).filter((word) => word.length > 2 && !['and', 'the', 'like', 'that', 'was', 'just', 'kind', 'okay', 'really'].includes(word));
+  model.vocabulary[index] = list.length ? list : ['bloom'];
+  return model.vocabulary[index];
+}
+
+const widths = new Map();
+function measure(ctx, word, size) {
+  const key = `${size}|${word}`;
+  if (!widths.has(key)) {
+    ctx.font = `${size}px "Iowan Old Style", Georgia, serif`;
+    widths.set(key, ctx.measureText(word).width);
+  }
+  return widths.get(key);
+}
+
+function spine(pts) {
+  const half = pts.length / 2;
+  return Array.from({ length: half }, (_, i) => {
+    const [ax, ay] = pts[i];
+    const [bx, by] = pts[pts.length - 1 - i];
+    return [(ax + bx) / 2, (ay + by) / 2, Math.hypot(ax - bx, ay - by)];
+  });
+}
+
+// soft out-of-focus light, rendered once per mood and drifted each frame
+let bokeh = null;
+function bokehLayer(mood) {
+  const key = JSON.stringify(mood || {});
+  if (bokeh?.key === key) return bokeh.layer;
+  const layer = offscreen(400, (c) => {
+    c.scale(400 / W, 400 / W);
+    c.fillStyle = '#2c3324';
+    c.fillRect(0, 0, W, W);
+    c.filter = 'blur(60px)';
+    moodBlobs(c, mood, 0, 6, 16, 1.2);
+    const valence = mood?.valence ?? 0;
+    [[0.25, 0.3, 0.3, [58, 55, 70]], [0.8, 0.85, 0.28, [52, 45, 62]], [0.7, 0.15, 0.25, [140, 25, 18]]].forEach(([x, y, r, color]) => {
+      const gradient = c.createRadialGradient(x * W, y * W, 0, x * W, y * W, r * W);
+      gradient.addColorStop(0, hsla([color[0] - valence * 15, color[1], color[2]], 0.75));
+      gradient.addColorStop(1, hsla(color, 0));
+      c.fillStyle = gradient;
+      c.fillRect(0, 0, W, W);
+    });
+  });
+  bokeh = { key, layer };
+  return layer;
+}
+
+const fineGrain = noiseLayer(256, (r) => [r * 255, 255]);
+
+const words = {
+  labels: false,
+  text: { main: [55, 55, 86], sub: [55, 35, 80], serif: '"Iowan Old Style", Georgia, serif', mono: 'ui-monospace, Menlo, monospace', memory: 78 },
+  background(ctx, model, now) {
+    const drift = Math.sin(now * 0.05) * 30;
+    ctx.drawImage(bokehLayer(model.mood), -40 + drift, -40 - drift * 0.6, W + 80, W + 80);
   },
-  draw(ctx, items) {
-    for (const item of items) {
+  draw(ctx, items, settings, boil, model) {
+    const spacing = settings.spacing;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(255, 248, 200, .35)';
+    ctx.shadowBlur = settings.glow;
+    const ink = (item, strength = 1) => {
       const a = abstraction(item.age ?? 0);
-      const hue = item.color ? item.color[0] : (item.hue ?? 140) === STEM_HUE ? 140 : item.hue;
-      const color = [hue, lerp(90, 30, a), lerp(62, 50, a)];
-      const alpha = item.alpha * lerp(1, 0.55, a);
-      ctx.lineWidth = 1.2;
+      const hue = item.color ? item.color[0] : item.hue === STEM_HUE || item.hue === undefined ? 58 : item.hue;
+      const sat = item.hue === STEM_HUE || item.hue === undefined ? 50 : 40;
+      return hsla([lerp(hue, 58, 0.55), lerp(sat, 15, a), lerp(84, 78, a)], item.alpha * lerp(0.95, 0.5, a) * strength);
+    };
+    for (const item of items) {
+      const vocab = vocabulary(model, item.day);
+      const rand = random(String(item.key));
+      const pick = () => vocab[Math.floor(rand() * vocab.length)];
+      const age = abstraction(item.age ?? 0);
       if (item.kind === 'ribbon') {
-        trace(ctx, item.pts);
-        ctx.fillStyle = hsla(color, alpha * 0.85);
-        ctx.fill();
+        // stack words up the branch; thick parts carry several side by side
+        const path = spine(item.pts);
+        let carry = 0;
+        for (let i = 1; i < path.length; i += 1) {
+          const [x0, y0] = path[i - 1];
+          const [x1, y1, width] = path[i];
+          const length = Math.hypot(x1 - x0, y1 - y0);
+          carry += length;
+          const body = 6 + width * 6; // words need more room than a line does
+          const size = Math.round(clamp(11 + width * 0.8 - age * 2, 10, 19));
+          const word = pick();
+          const w = measure(ctx, word, size);
+          const along = Math.abs((x1 - x0) / (length || 1));
+          const step = (along * w * 0.9 + (1 - along) * size * 0.8) * spacing;
+          if (carry < step) continue;
+          carry = 0;
+          const across = Math.max(1, Math.round(body / (w * 0.9 + 4)));
+          ctx.font = `${size}px "Iowan Old Style", Georgia, serif`;
+          ctx.fillStyle = ink(item);
+          for (let k = 0; k < across; k += 1) {
+            const offset = (k - (across - 1) / 2) * w * 0.8;
+            ctx.fillText(k ? pick() : word, x1 + offset + (rand() - 0.5) * 4, y1 + (rand() - 0.5) * 3);
+          }
+        }
       } else if (item.kind === 'leaf' || item.kind === 'petal') {
-        trace(ctx, item.pts);
-        ctx.fillStyle = hsla(color, alpha * (item.kind === 'petal' ? 0.28 : 0.12));
-        ctx.fill();
-        ctx.strokeStyle = hsla([hue, 90, 70], alpha);
-        ctx.stroke();
+        // a leaf or petal is a small heap of words around its axis
+        const [x0, y0, x1, y1] = item.axis;
+        const count = item.kind === 'petal' ? 2 : 2;
+        ctx.fillStyle = ink(item, item.kind === 'petal' ? 1 : 0.85);
+        for (let k = 0; k < count; k += 1) {
+          const t = (k + 0.5) / count;
+          const size = item.kind === 'petal' ? 13 + Math.round(rand() * 4) : 12;
+          ctx.font = `${size}px "Iowan Old Style", Georgia, serif`;
+          ctx.fillText(pick(), lerp(x0, x1, t) + (rand() - 0.5) * 6, lerp(y0, y1, t) + (rand() - 0.5) * 6);
+        }
       } else if (item.kind === 'dot') {
-        ctx.fillStyle = hsla([hue, 90, 70], alpha);
-        ctx.fillRect(item.x - item.r, item.y - item.r, item.r * 2, item.r * 2);
+        if (item.color) continue;
+        ctx.font = '9px "Iowan Old Style", Georgia, serif';
+        ctx.fillStyle = ink(item, 0.8);
+        ctx.fillText(pick(), item.x, item.y);
       } else if (item.kind === 'dust') {
-        ctx.fillStyle = hsla(color, alpha);
-        item.links.forEach(([x0, y0]) => ctx.fillRect(x0 - 1, y0 - 1, 2, 2));
+        // a compressed day: only its keywords, scattered and faint
+        ctx.font = 'italic 9px "Iowan Old Style", Georgia, serif';
+        ctx.fillStyle = ink(item, 0.7);
+        item.links.forEach(([x, y], i) => { if (i % 7 === 0) ctx.fillText(pick(), x, y); });
       }
     }
+    ctx.shadowBlur = 0;
   },
-  window() {},
+  window(ctx, model, now) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'overlay';
+    ctx.globalAlpha = model.grain ?? 0.16;
+    ctx.translate((now * 37) % 256 - 256, (now * 53) % 256 - 256);
+    ctx.fillStyle = ctx.createPattern(fineGrain, 'repeat');
+    ctx.fillRect(0, 0, W + 512, W + 512);
+    ctx.restore();
+    // glass: darker rim, a soft highlight top left and a thin inner reflection
+    vignette(ctx, 'rgba(10,14,8,.25)', 'rgba(5,8,4,.8)');
+    const shine = ctx.createRadialGradient(W * 0.3, W * 0.22, 0, W * 0.3, W * 0.22, W * 0.5);
+    shine.addColorStop(0, 'rgba(255,255,240,.10)');
+    shine.addColorStop(1, 'rgba(255,255,240,0)');
+    ctx.fillStyle = shine;
+    ctx.fillRect(0, 0, W, W);
+  },
 };
 
-const STYLES = { ink, paper, signal };
+const STYLES = { ink, paper, words };
 
 // ---------- shared text layer ----------
 
@@ -477,82 +588,4 @@ function drawCaption(ctx, model, focus, theme) {
     return;
   }
   lines(dayText(model, day), 16, 480, 870, 21, 4, 'main', lerp(0.92, 0.65, abstraction(day.age)), day.compression === 'keywords');
-}
-
-// ---------- signal post-process ----------
-
-const SIGNAL_SHADER = `
-precision mediump float;
-uniform sampler2D scene;
-uniform vec2 resolution;
-uniform float time, pixel, levels, glow, aberration, scanlines;
-varying vec2 uv;
-
-float bayer2(vec2 a) { a = floor(a); return fract(dot(a, vec2(0.5, a.y * 0.75))); }
-float bayer4(vec2 a) { return bayer2(0.5 * a) * 0.25 + bayer2(a); }
-
-vec3 sample(vec2 p, vec2 c) {
-  vec2 shift = c * aberration * 0.006;
-  return vec3(texture2D(scene, p + shift).r, texture2D(scene, p).g, texture2D(scene, p - shift).b);
-}
-
-void main() {
-  vec2 c = uv - 0.5;
-  vec2 p = 0.5 + c * (1.0 - 0.05 * dot(c, c));            // round lens
-  vec2 cell = pixel / resolution;
-  p = (floor(p / cell) + 0.5) * cell;                     // pixel grid
-  vec3 color = sample(p, c);
-  vec3 halo = vec3(0.0);
-  for (int i = 0; i < 12; i++) {                          // cheap glow
-    float a = float(i) * 0.5236;
-    float r = (mod(float(i), 3.0) + 1.0) * 0.006;
-    halo += texture2D(scene, p + vec2(cos(a), sin(a)) * r).rgb;
-  }
-  color += halo / 12.0 * glow;
-  vec2 dither = gl_FragCoord.xy / pixel;
-  color = floor(color * levels + bayer4(dither)) / levels; // ordered dither
-  float line = 0.5 + 0.5 * sin(gl_FragCoord.y / pixel * 3.14159);
-  color *= 1.0 - scanlines * 0.35 * line;
-  color *= 0.94 + 0.06 * sin(time * 1.7 + uv.y * 40.0);
-  color *= smoothstep(0.5, 0.42, length(c));
-  gl_FragColor = vec4(color, 1.0);
-}`;
-
-function signalPass(gl) {
-  const compile = (type, source) => {
-    const shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(shader));
-    return shader;
-  };
-  const program = gl.createProgram();
-  gl.attachShader(program, compile(gl.VERTEX_SHADER, 'attribute vec2 p; varying vec2 uv; void main() { uv = p * 0.5 + 0.5; gl_Position = vec4(p, 0.0, 1.0); }'));
-  gl.attachShader(program, compile(gl.FRAGMENT_SHADER, SIGNAL_SHADER));
-  gl.linkProgram(program);
-  gl.useProgram(program);
-  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
-  const position = gl.getAttribLocation(program, 'p');
-  gl.enableVertexAttribArray(position);
-  gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
-  gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  const at = (name) => gl.getUniformLocation(program, name);
-  const uniforms = ['resolution', 'time', 'pixel', 'levels', 'glow', 'aberration', 'scanlines'].reduce((all, name) => ({ ...all, [name]: at(name) }), {});
-  return (source, now, settings) => {
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
-    gl.uniform2f(uniforms.resolution, gl.canvas.width, gl.canvas.height);
-    gl.uniform1f(uniforms.time, now);
-    gl.uniform1f(uniforms.pixel, settings.pixel * gl.canvas.width / W);
-    gl.uniform1f(uniforms.levels, settings.levels);
-    gl.uniform1f(uniforms.glow, settings.glow);
-    gl.uniform1f(uniforms.aberration, settings.aberration);
-    gl.uniform1f(uniforms.scanlines, settings.scanlines);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-  };
 }

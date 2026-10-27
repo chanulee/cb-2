@@ -53,8 +53,9 @@ screen: a plant seen through a round window, grown from Pond conversations.
   the pipe model.
 - Styles: **Ink** (dark glass), **Paper** (watercolour: each shape warped and
   stacked in low-opacity layers under a graphite line; compressed days keep
-  only the pencil), **Signal** (WebGL pass: lens, glow, ordered dither,
-  scanlines). Open the ◐ button or press `g` for the panel; `?style=paper`
+  only the pencil), **Words** (the plant written in each day's own words on
+  blurred, grainy light behind glass; days keep only the words their
+  compression level still holds). Open the ◐ button or press `g` for the panel; `?style=paper`
   picks one from the URL. Settings persist in the browser.
 - Drag up/down (or wheel / arrow keys) to walk back through days; tap a branch
   to read that day at its stored fidelity; tap a rim memory to light up every

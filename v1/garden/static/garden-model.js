@@ -371,7 +371,7 @@ function flowerShapes(model, flower, now, alpha, out) {
     const sin = Math.sin(rot);
     const local = petalOutline(random(flower.seed + Math.round(p.phi * 1000)), length, size * p.scale * 0.32);
     out.push({
-      kind: 'petal', key: flower.seed + index, alpha,
+      kind: 'petal', key: flower.seed + index, day: b.day, alpha,
       pts: local.map(([u, v]) => [x + u * cos - v * sin, y + u * sin + v * cos]),
       axis: [x, y, x + cos * length, y + sin * length],
       color: [h + p.ring * 6, s, l + (p.depth < 0 ? -8 : 0) - p.ring * 4],
@@ -383,7 +383,7 @@ function flowerShapes(model, flower, now, alpha, out) {
       const angle = rand() * Math.PI * 2;
       const r = rand() * size * 0.16;
       out.push({
-        kind: 'dot', key: flower.seed + 100 + i, alpha: a, r: 1.6, tone: 'stamen',
+        kind: 'dot', key: flower.seed + 100 + i, day: b.day, alpha: a, r: 1.6, tone: 'stamen',
         x: x + Math.cos(angle + tilt) * r, y: y + Math.sin(angle) * r * 0.45 - size * 0.08,
         color: [44 + rand() * 12, 85, 60 + rand() * 15],
       });
@@ -410,13 +410,13 @@ function collect(model, now, focus) {
       for (let k = 1; k <= b.n; k += 1) {
         if (k === b.n || b.dayAt(k + 1) !== b.dayAt(from + 1)) {
           const day = model.days[b.dayAt(from + 1)];
-          out.push({ kind: 'ribbon', key: `stem${from}`, pts: ribbon(b, from, k), hue: STEM_HUE, age: day?.age ?? 0, alpha: dim({ ...b, day: b.dayAt(from + 1) }), w: b.w0 });
+          out.push({ kind: 'ribbon', key: `stem${from}`, pts: ribbon(b, from, k), day: b.dayAt(from + 1), hue: STEM_HUE, age: day?.age ?? 0, alpha: dim({ ...b, day: b.dayAt(from + 1) }), w: b.w0 });
           from = k;
         }
       }
       continue;
     }
-    out.push({ kind: 'ribbon', key: b.key, pts: ribbon(b, 0, b.n), hue: b.hue, age: b.age, alpha: dim(b), w: b.w0 });
+    out.push({ kind: 'ribbon', key: b.key, pts: ribbon(b, 0, b.n), day: b.day, hue: b.hue, age: b.age, alpha: dim(b), w: b.w0 });
   }
   for (const item of model.dust) {
     const b = item.branch;
@@ -425,7 +425,7 @@ function collect(model, now, focus) {
     const y = b.py[b.n];
     if (item.berry) {
       for (let i = 0; i < 3; i += 1) {
-        out.push({ kind: 'dot', key: `${b.key}.b${i}`, x: x + Math.sin(i * 2.1 + b.phase) * 4, y: y + Math.cos(i * 2.1) * 4, r: 2.4, hue: b.hue, age: item.age, alpha: dim(b) });
+        out.push({ kind: 'dot', key: `${b.key}.b${i}`, x: x + Math.sin(i * 2.1 + b.phase) * 4, y: y + Math.cos(i * 2.1) * 4, r: 2.4, day: b.day, hue: b.hue, age: item.age, alpha: dim(b) });
       }
       continue;
     }
@@ -436,7 +436,7 @@ function collect(model, now, focus) {
       const parent = item.points[point.parent];
       links.push([x + point.x * scale, y + point.y * scale, x + parent.x * scale, y + parent.y * scale]);
     });
-    out.push({ kind: 'dust', key: b.key, links, hue: b.hue, age: item.age, alpha: dim(b) });
+    out.push({ kind: 'dust', key: b.key, day: b.day, links, hue: b.hue, age: item.age, alpha: dim(b) });
   }
   for (const leaf of model.leaves) {
     const b = leaf.branch;
@@ -444,7 +444,7 @@ function collect(model, now, focus) {
     const g = clamp((b.g * b.n - k) / 2 + 0.3);
     if (g <= 0 || b.g < 0.3) continue;
     const shape = leafShape(b.px[k], b.py[k], b.hd[k] + leaf.side * 0.85, leaf.size * g, leaf.side);
-    out.push({ kind: 'leaf', key: `${b.key}.l${k}`, ...shape, age: leaf.age, alpha: dim(b) });
+    out.push({ kind: 'leaf', key: `${b.key}.l${k}`, ...shape, day: b.day, age: leaf.age, alpha: dim(b) });
   }
   for (const flower of model.flowers) flowerShapes(model, flower, now, dim(flower.branch), out);
   return out;
