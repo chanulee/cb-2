@@ -1,0 +1,95 @@
+{
+  "about": "Synthetic Pond conversations for designing the Garden display. Four days of first-person reflection questions and dictated answers, plus what the memory system would keep from them: older days are stored at lower fidelity (raw -> summary -> gist -> keywords) and recurring things about the person are lifted into long-term memory.",
+  "anchor": "2026-10-27",
+  "compression_levels": {
+    "raw": "today: every turn kept word for word",
+    "summary": "1 day old: threads with their facets and a paragraph summary",
+    "gist": "2 days old: threads only, one sentence",
+    "keywords": "3+ days old: only memory keywords and a count of turns"
+  },
+  "memory": [
+    {"key": "making", "label": "making things by hand", "kind": "value", "days": ["2026-10-25", "2026-10-26", "2026-10-27"], "note": "Feels most like myself when building something physical; calmer after soldering or drawing."},
+    {"key": "enough", "label": "am I doing enough", "kind": "pattern", "days": ["2026-10-24", "2026-10-26", "2026-10-27"], "note": "Measures the day against other people's output; the question returns when tired."},
+    {"key": "alone", "label": "carrying it alone", "kind": "pattern", "days": ["2026-10-25", "2026-10-27"], "note": "Defaults to doing everything alone, then notices it went better when someone joined."},
+    {"key": "tired", "label": "tiredness and sleep", "kind": "body", "days": ["2026-10-24", "2026-10-25", "2026-10-27"], "note": "Short sleep before deadlines; mood drops in the afternoon."},
+    {"key": "jiwoo", "label": "Jiwoo", "kind": "person", "days": ["2026-10-25", "2026-10-27"], "note": "Friend who cooks, asks plain questions, makes things feel lighter."},
+    {"key": "mom", "label": "Mom", "kind": "person", "days": ["2026-10-24"], "note": "Calls on Fridays; worried about health and eating."},
+    {"key": "slowness", "label": "slow walks", "kind": "value", "days": ["2026-10-24", "2026-10-26"], "note": "Walking by the river or in rain resets the day."}
+  ],
+  "days": [
+    {
+      "date": "2026-10-24",
+      "compression": "keywords",
+      "mood": {"valence": -0.3, "energy": 0.3},
+      "gist": "A rough rehearsal, a call with Mom, and a long walk that helped.",
+      "summary": "The demo rehearsal went badly and I compared myself to the other teams all afternoon. Mom called and asked if I was eating. I skipped the second rehearsal and walked along the river until it got dark, which helped more than practising would have.",
+      "threads": [
+        {"topic": "rehearsal", "memory": ["enough", "tired"], "facets": [{"label": "lost my place"}, {"label": "other teams"}]},
+        {"topic": "Mom", "memory": ["mom"], "facets": [{"label": "are you eating"}]},
+        {"topic": "river walk", "memory": ["slowness"], "facets": [{"label": "skipped practice"}, {"label": "dark at six"}]}
+      ],
+      "turns": [
+        {"at": "21:42", "thread": 0, "question": "Let's look back on my day to understand myself better.", "answer": "okay um today was the rehearsal for the demo and it did not go well like I lost my place twice and the slides were out of order and I just kind of froze. and then the team before us was really polished so I spent the whole afternoon comparing which I know is not useful but yeah"},
+        {"at": "21:44", "thread": 0, "question": "Why did I compare myself to the other team instead of looking at what went wrong for me?", "answer": "I think because it's easier? like if they're just better then it's not about anything I can fix. also I slept like four hours so everything felt bigger than it was"},
+        {"at": "21:46", "thread": 1, "question": "Think back to a moment today that made me smile or feel grateful.", "answer": "mom called around six, she always calls on fridays, and the first thing she asked was are you eating. and I wasn't really, I had like a granola bar. it was annoying for a second and then it was kind of nice that someone asks"},
+        {"at": "21:49", "thread": 2, "question": "If I could do one thing differently today, what would it be and why?", "answer": "honestly I skipped the second rehearsal and went for a walk along the river instead and I don't think I'd change that. it got dark at six which surprised me. I came back calmer. maybe I'd just do it earlier instead of feeling guilty about it first"}
+      ]
+    },
+    {
+      "date": "2026-10-25",
+      "compression": "gist",
+      "mood": {"valence": 0.4, "energy": 0.5},
+      "gist": "Slept in, soldered the Pond prototype, and got the mic working once Jiwoo came over.",
+      "summary": "I slept until eleven and felt guilty about it. I spent the afternoon soldering the Pond board; the display went black and I nearly gave up, then found a cold joint. Jiwoo came over, cooked, and asked why I hadn't asked for help. The microphone picked up my voice for the first time that night.",
+      "threads": [
+        {"topic": "slept in", "memory": ["tired"], "facets": [{"label": "guilt"}, {"label": "body needed it"}]},
+        {"topic": "soldering Pond", "memory": ["making"], "facets": [{"label": "black screen"}, {"label": "cold joint"}, {"label": "mic works"}]},
+        {"topic": "Jiwoo", "memory": ["jiwoo", "alone"], "facets": [{"label": "cooked dinner"}, {"label": "why not ask"}]}
+      ],
+      "turns": [
+        {"at": "22:10", "thread": 0, "question": "Let's look back on my day to understand myself better.", "answer": "I slept until like eleven which, I felt bad about at first but I think my body just needed it after this week. then I spent basically the whole afternoon soldering the pond board"},
+        {"at": "22:12", "thread": 1, "question": "What was the most challenging part of my day, and what did I learn from it?", "answer": "the display just went black at one point and I was sure I'd fried it, I was about to order a new one. and then I reflowed one pin and it came back. so it was a cold joint. I guess I learned to check the boring thing first before assuming the worst"},
+        {"at": "22:15", "thread": 2, "question": "Who was with me when things turned around today?", "answer": "jiwoo came over around seven and made pasta and was like why didn't you just text me, I could've held the board. and I didn't really have an answer. I always kind of assume I should do it by myself"},
+        {"at": "22:18", "thread": 1, "question": "What small victory did I achieve today that I'm proud of?", "answer": "the mic picked up my voice! like the first time it actually transcribed something I said. it was just testing one two but I was really happy, jiwoo clapped"}
+      ]
+    },
+    {
+      "date": "2026-10-26",
+      "compression": "summary",
+      "mood": {"valence": 0.1, "energy": 0.2},
+      "gist": "A rainy day of reading and drawing trees; skipped the opening and wondered why I keep measuring myself.",
+      "summary": "It rained all day. I read the Munari book and drew trees by his rules: repetition, then branches splitting. I saw everyone's posts from the gallery opening and felt behind, then chose not to go. Drawing slowly felt better than being seen.",
+      "threads": [
+        {"topic": "drawing trees", "memory": ["making", "slowness"], "facets": [{"label": "Munari rules"}, {"label": "each branch thinner"}, {"label": "lost track of time"}]},
+        {"topic": "the opening", "memory": ["enough"], "facets": [{"label": "everyone's posts"}, {"label": "chose not to go"}]},
+        {"topic": "rain", "memory": ["slowness"], "facets": [{"label": "window all day"}]}
+      ],
+      "turns": [
+        {"at": "20:05", "thread": 2, "question": "Let's look back on my day to understand myself better.", "answer": "it rained basically all day so I stayed in, I was by the window most of the day, read a bit of that munari book, drawing a tree"},
+        {"at": "20:07", "thread": 0, "question": "What did drawing the trees make me notice about myself?", "answer": "his rule is like each branch is thinner than the one before, and I did like twenty of them and totally lost track of time. it's weird how calm I get when my hands are busy and there's a simple rule"},
+        {"at": "20:10", "thread": 1, "question": "If I could do one thing differently today, what would it be and why?", "answer": "there was the gallery opening tonight and I saw everyone's stories and felt kind of behind, like everyone's out there and showing work. and I decided not to go. I don't know if that was avoiding or just honest. I think I wanted to keep drawing more than I wanted to be seen"},
+        {"at": "20:13", "thread": 1, "question": "Why do I keep measuring my day against what other people are doing?", "answer": "hmm. I think when I don't have something finished I need some kind of scoreboard. but it's always someone else's scoreboard. today I kind of noticed it and then went back to drawing which is new"}
+      ]
+    },
+    {
+      "date": "2026-10-27",
+      "compression": "raw",
+      "mood": {"valence": 0.5, "energy": 0.4},
+      "gist": "Cut the scope with the professor, lunch with Jiwoo, and drew a garden made of conversations.",
+      "summary": "The professor meeting turned into cutting half the Cognitive Bloom features, which felt like relief rather than failure. Lunch with Jiwoo helped me see I plan as if I'm alone. Tired by four. In the evening I sketched the garden display: old days as branches, today as a flower.",
+      "threads": [
+        {"topic": "cutting scope", "memory": ["enough", "making"], "facets": [{"label": "professor meeting"}, {"label": "relief not failure"}, {"label": "one loop that works"}]},
+        {"topic": "lunch with Jiwoo", "memory": ["jiwoo", "alone"], "facets": [{"label": "plan as if alone"}, {"label": "ask earlier"}]},
+        {"topic": "afternoon slump", "memory": ["tired"], "facets": [{"label": "4pm crash"}, {"label": "second coffee"}]},
+        {"topic": "garden sketch", "memory": ["making"], "facets": [{"label": "old days as branches"}, {"label": "today a flower"}, {"label": "memory fades"}]}
+      ],
+      "turns": [
+        {"at": "21:30", "thread": 0, "question": "Let's look back on my day to understand myself better.", "answer": "okay so today I met the professor about cognitive bloom and I showed the whole plan and he just asked which part actually has to work for the demo. and we ended up cutting like half of it. the bluetooth stuff, the app store thing, all gone"},
+        {"at": "21:32", "thread": 0, "question": "Why did cutting half of my plan feel like relief instead of failure?", "answer": "because I think I knew. like I was carrying all of it because I thought more features means I'm doing enough. and when he said one loop that works is enough it was like okay, I can breathe. one loop. pond, garden, back"},
+        {"at": "21:35", "thread": 1, "question": "Think back to a moment today that made me smile or feel grateful.", "answer": "lunch with jiwoo. I was telling them about the meeting and they said you always plan like nobody's going to help you. which, yeah. that's the second time this week. I think I should ask earlier instead of at the end when it's already on fire"},
+        {"at": "21:38", "thread": 2, "question": "What was the most challenging part of my day, and what did I learn from it?", "answer": "around four I just crashed, like couldn't read a sentence. I had a second coffee which didn't really help. I think it's the sleep again, I keep saying I'll fix it"},
+        {"at": "21:41", "thread": 3, "question": "What small victory did I achieve today that I'm proud of?", "answer": "in the evening I sketched what the garden screen could look like, like the old days are branches lower down and today is a flower at the top and the old stuff kind of fades, like how memory gets compressed. it's the first time the project felt like mine and not like a checklist"}
+      ]
+    }
+  ]
+}

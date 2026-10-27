@@ -51,7 +51,8 @@ class Handler(BaseHTTPRequestHandler):
             self.json({"ok": True, "flow": "Pond WAV -> whisper.cpp -> Gemma 4"})
             return
         if path == "/api/garden":
-            self.json({"today": date.today().isoformat(), "days": journal.days(journal.load(), date.today())})
+            demo = "demo" in urlparse(self.path).query
+            self.json(journal.garden([] if demo else journal.load(), date.today()))
             return
         if path == "/api/start":
             self.json(opening_turn().to_dict())

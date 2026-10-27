@@ -34,15 +34,21 @@ swap, CPU/GPU, temperature, power, logs, and llama.cpp token speed.
 screen: a plant seen through a round window, grown from Pond conversations.
 
 - Every finished Pond turn is appended to `~/.bloom/garden.jsonl`
-  (`BLOOM_GARDEN_DIR` overrides); `/api/garden` groups it by day with topics.
-- Past days are side branches up the stem, oldest lowest. Older days abstract
-  like a summarised context: cooler, paler, fewer forks, and past two weeks
-  they dissolve into DLA dust (fogleman/dlaf).
-- Today grows a three-level crown (topic → facets → twigs with buds) and one
-  nonflowers-style flower at the top.
+  (`BLOOM_GARDEN_DIR` overrides); `/api/garden` groups it by day.
+- `data/synthetic_garden.json` holds four days of sample conversations (Pond's
+  first-person questions, dictated answers) and what memory keeps of them. It
+  is shown when there is no history yet or with `?demo`, shifted so its last
+  day is today.
+- Fidelity drops with age (raw → summary → gist → keywords) and the plant
+  keeps fewer branch generations to match: today thread → facet → turn,
+  yesterday thread → facet, then threads only, then a DLA cluster.
+- Branch colour comes from the long-term memory a thread belongs to, so
+  recurring patterns share a hue across days; the strongest memories (recurrence
+  weighted by recency) sit on the window rim, and today's flower takes the
+  colour of the strongest memory it touched. Background light follows today's mood.
 - Drag up/down (or wheel / arrow keys) to walk back through days; tap a branch
-  to focus that day; it returns to today after 25 s. With no history yet, or
-  with `?demo`, it shows a sample garden.
+  to read that day at its stored fidelity; tap a rim memory to light up every
+  day it appeared in. It returns to today after 25 s.
 
 ## Run the UI without inference
 

@@ -28,6 +28,13 @@ class JournalTests(unittest.TestCase):
             path.write_text(path.read_text() + "not json\n")
             self.assertEqual(journal.load(path), [item])
 
+    def test_synthetic_garden_is_anchored_to_today_and_compressed_by_age(self):
+        result = journal.garden([], date(2026, 11, 3))
+        self.assertTrue(result["sample"])
+        self.assertEqual([day["date"] for day in result["days"]][-1], "2026-11-03")
+        self.assertEqual([day["compression"] for day in result["days"]], ["keywords", "gist", "summary", "raw"])
+        self.assertEqual(result["memory"][0]["key"], "making")
+
 
 if __name__ == "__main__":
     unittest.main()

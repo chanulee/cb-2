@@ -26,6 +26,54 @@ STOPWORDS = frozenset(
 )
 
 
+SYNTHETIC = Path(__file__).resolve().parent.parent / "data" / "synthetic_garden.json"
+LEVELS = ("raw", "summary", "gist", "keywords")
+
+
+def compression(age: int) -> str:
+    """Older days are kept at lower fidelity, like a summarised context."""
+    return LEVELS[min(max(age, 0), len(LEVELS) - 1)]
+
+
+def rank_memory(memory: list[dict], today: date) -> list[dict]:
+    """Weight = how often it recurs, recent days counting more; strongest first."""
+    ranked = []
+    for item in memory:
+        weight = sum(0.75 ** (today - date.fromisoformat(day)).days for day in item.get("days", []))
+        ranked.append({**item, "weight": round(weight, 3)})
+    return sorted(ranked, key=lambda item: -item["weight"])
+
+
+def synthetic(today: date, path: Path = SYNTHETIC) -> dict:
+    """Sample garden shifted so its last day is today."""
+    data = json.loads(path.read_text(encoding="utf-8"))
+    shift = today - date.fromisoformat(data["anchor"])
+    moved = lambda key: (date.fromisoformat(key) + shift).isoformat()  # noqa: E731
+    days = []
+    for day in data["days"]:
+        when = date.fromisoformat(day["date"]) + shift
+        age = (today - when).days
+        days.append({**day, "date": when.isoformat(), "age": age, "compression": compression(age), "turns": len(day["turns"]), "lines": [turn["answer"] for turn in day["turns"]]})
+    memory = [{**item, "days": [moved(key) for key in item["days"]]} for item in data["memory"]]
+    return {"today": today.isoformat(), "sample": True, "memory": rank_memory(memory, today), "days": days}
+
+
+def garden(entries: list[dict[str, str]], today: date) -> dict:
+    """What the display grows from; falls back to the sample garden when empty."""
+    if not entries:
+        return synthetic(today)
+    grouped = days(entries, today)
+    for day in grouped:
+        day["compression"] = compression(day["age"])
+        day["threads"] = [{"topic": topic, "memory": [topic], "facets": []} for topic in day["topics"]]
+    memory: dict[str, list[str]] = {}
+    for day in grouped:
+        for topic in day["topics"]:
+            memory.setdefault(topic, []).append(day["date"])
+    recurring = [{"key": key, "label": key, "kind": "theme", "days": dates} for key, dates in memory.items() if len(dates) > 1]
+    return {"today": today.isoformat(), "sample": False, "memory": rank_memory(recurring, today), "days": grouped}
+
+
 def journal_path() -> Path:
     root = os.environ.get("BLOOM_GARDEN_DIR") or os.path.expanduser("~/.bloom")
     return Path(root) / "garden.jsonl"
