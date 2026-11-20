@@ -1,57 +1,107 @@
-# Interaction v2 — 논문 기반 인터랙션 업데이트 (생각 정리)
+# Interaction v2: updating the BLOOM ritual from the paper
 
-상태: 제안. 코드는 아직 바꾸지 않았다.
+Status: proposal. No code has been changed.
 
-- 근거 논문: Singh, Taneja, Guan, Ghosh. *Protecting Human Cognition in the Age of AI*. Tools for Thought at CHI '25. arXiv:2502.12447v3
-- 유저 저니 맵 (FigJam): https://www.figma.com/board/qF1ZWOxy3qd5NY6LT0sHfc
+- Paper: Singh, Taneja, Guan, Ghosh. *Protecting Human Cognition in the Age of AI*. Tools for Thought at CHI '25. arXiv:2502.12447v3.
+- Product concept: <https://mapprojectoffice.com/work/cognitive-bloom/>
+- User journey map (FigJam): <https://www.figma.com/board/qF1ZWOxy3qd5NY6LT0sHfc>
 
-## 현재 v1 인터랙션 (코드 기준)
+## What the concept defines
 
-1. Springboard → Pond 앱.
-2. 고정 문장 5개 중 하나가 한 단어씩 나온다 (`v1/garden/bloom_garden/session.py`의 `PROMPTS`).
-3. `Start speaking` → 녹음 → `I'm done` → `Sending...` (`v1/pond/firmware/main/main.cpp`의 `record_clicked`).
-4. Garden: whisper.cpp 전사 → Gemma가 1인칭 질문 1개(25단어 이하)를 만든다. 입력은 직전 전사 1개뿐이다 (`inference.py`의 `chat_payload`).
-5. 새 질문이 한 단어씩 나온다. 2로 돌아간다. 종료 상태와 세션 간 저장은 없다.
+The physical interaction comes from the Cognitive Bloom concept page, not from this proposal:
 
-## 논문에서 가져온 것
+- The Pond is held in the hand.
+- The user tilts the Pond toward one of four areas of personal growth: critical thinking, emotional support, self understanding, decision making.
+- The user presses the bezel down to select the area. This starts the wordstream.
+- The wordstream shows first-person reflections one word at a time.
+- A progress bar tracks the session. Once enough depth is reached, the user can choose to end.
+- The Garden is the hub. It shows one plant per area, and each plant flourishes or wilts with the care given to that area.
 
-논문은 Dewey의 reflective thinking 전제조건 5개를 기준으로, GenAI가 각 조건을 어떻게 약화시키는지와 대응 설계를 제시한다.
+## What the v1 code does today
 
-| Dewey 전제조건 | GenAI가 약화시키는 방식 (논문) | 논문이 제시한 대응 |
+1. The Pond boots to an on-screen Springboard. The user taps the Pond app icon.
+2. One of five fixed prompts appears one word at a time (`PROMPTS` in `v1/garden/bloom_garden/session.py`).
+3. The user taps `Start speaking`, talks, then taps `I'm done` (`record_clicked` in `v1/pond/firmware/main/main.cpp`).
+4. The Garden transcribes the audio with whisper.cpp. Gemma writes one first-person question of at most 25 words. Gemma receives only the last transcript (`chat_payload` in `inference.py`).
+5. The new question appears and the loop returns to step 3.
+
+There is no tilt, no bezel input, no area selection, no progress bar, no ending, and nothing is stored between sessions.
+
+## What the paper says
+
+The paper uses Dewey's five prerequisites for reflective thinking to explain how generative AI weakens thinking, and what a design can do about it.
+
+| Dewey's prerequisite | How generative AI weakens it | What the paper suggests |
 | --- | --- | --- |
-| 1. 의문·혼란 상태 | 즉각적으로 합성된 응답이 인지 부조화의 순간을 줄인다 | 응답 일부를 사용자가 하이라이트, 출력 사용 전 작은 마찰(friction) |
-| 2. 사전 경험·지식 활용 | — | 스키마(지식 그래프)로 사전 지식 활성화 |
-| 3. 능동적·지속적 숙고 | 챗봇이 표면적 대화로 흐른다 | 관련 아이디어를 사전 지식에 연결 |
-| 4. 판단 유보, 불확실성 감내 | 기존 믿음에 맞추는 경향, 확신에 찬 어조 | metacognitive prompt, provocation (반대 관점) |
-| 5. 관련 아이디어 연결·평가 | 정리된 응답이 이해했다는 착각을 만든다 | 위와 같음 |
+| 1. A state of perplexity, confusion or doubt | Immediate, synthesized answers remove the moments of dissonance that start further thinking | Let people highlight parts of a response; add a small friction before the output can be used |
+| 2. Prior experience and knowledge to draw on | Not discussed directly | Show related prior knowledge when new information arrives (schemas, knowledge graph) |
+| 3. Active, persistent consideration of ideas | Chatbots favor surface-level discussion | Help people connect related ideas to what they already know |
+| 4. Suspended judgment and tolerance for uncertainty | Models align with existing beliefs and sound confident | Metacognitive prompts and provocations that raise alternative views |
+| 5. Connecting and evaluating related ideas | Structured, coherent answers create an illusion of understanding | Same as 3 and 4 |
 
-추가로: 학습 초반에는 AI 개입을 최소로 두고 스스로 버티는 시간(productive struggle, cognitive endurance)이 필요하다. Bloom 인지 과정(remember → understand → apply → analyze → evaluate → create) 중 LLM 사용 시 아래 단계들이 건너뛰어진다.
+The paper also says that effort at the beginning matters (productive struggle, cognitive endurance), so AI involvement should be minimal at the start and increase gradually. It uses Bloom's revised taxonomy (remember, understand, apply, analyze, evaluate, create) to show which cognitive steps people skip when a model does the work.
 
-## 제안하는 새 흐름
+## Proposed flow
 
-| 단계 | 사용자 | Pond | Garden | 현재 v1과의 차이 | 바꿀 파일 |
-| --- | --- | --- | --- | --- | --- |
-| 0. 진입 | Pond 앱을 누른다 | "What is still unsettled in me from today?" | 고정 문장 반환 | 지금은 기기가 주제를 정해준다 | `session.py` |
-| 1. 혼자 먼저 말하기 | 마음에 걸리는 것을 말한다 | 녹음 30초 전에는 `I'm done`이 흐리고, 누르면 "Keep going?" 1회 | 대기 | 최소 발화 시간 없음 | `main.cpp` |
-| 2. 기다림 | 방금 한 말을 다시 본다 | 최소 10초 Particles만 | 전사 → 세션 기록 → 질문 생성 | 응답 즉시 표시 | `turn.cpp` |
-| 3. 질문 읽기 + 단어 짚기 | 걸리는 단어에서 탭 | 탭한 단어가 밝게 남는다 | 탭한 단어를 focus로 받는다 | 탭 입력 없음 | `wordstream.cpp`, `/turn` 요청 |
-| 4. 같은 주제로 더 깊이 | 짚은 단어에 대해 2~3턴 말한다 | 1~3 반복 | 세션 전체 전사 + focus 전달, 질문 단계를 이해 → 분석 → 평가로 올린다 | 직전 전사 1개만 전달 | `session.py`, `inference.py` |
-| 5. 판단 미루기 | 자기 결론의 반대 경우를 말한다 | 4턴째에 "What if the opposite were true about what I just said?" | 동의·칭찬·요약·조언 금지 규칙 | 반대 관점 규칙 없음 | `inference.py` |
-| 6. 이전 생각과 연결 | 지난 세션의 자기 말과 비교한다 | "Last time I said: … How does today fit with that?" | 지난 마무리 문장 원문 1개를 불러온다 | 세션 간 저장 없음 | Garden 저장 (신규) |
-| 7. 내 말로 마무리 | 한 문장으로 직접 말한다 | 사용자 문장을 그대로 다시 보여주고 종료 | 원문 저장, 요약 생성 안 함 | 종료 없음 | `session.py`, Pond 종료 화면 |
+### Before the session
 
-## 논문에 없는 것 (임시로 정한 값)
+**1. The person notices the Garden while at home.** The Garden sits in the room and shows its plants. One plant has yellowing leaves. The Garden sends no notification, makes no sound and shows no prompt. The person decides alone whether to start. The paper's first prerequisite is that reflection begins from the person's own doubt, and it names notifications and information overload as a strain on attention.
 
-- 숫자: 최소 녹음 30초, 기다림 10초, 반대 질문 4턴째, 깊이 파기 2~3턴.
-- 단어 탭 방식. 논문은 "응답의 일부를 하이라이트"라고만 한다.
-- 지난 세션 연결을 마무리 문장 1개로 하는 것. 논문은 지식 그래프를 예로 든다.
+**2. The person picks the Pond up from the Garden.** They hold it in one hand. The Pond wakes when lifted and shows the four areas around the edge of the round screen. It shows no words yet. The person starts the session; the device does not.
 
-## 열린 질문
+### Beginning
 
-- 매 세션 같은 첫 문장이면 읽지 않게 되는가?
-- Jetson 추론 시간이 이미 충분한 마찰인가? 측정이 필요하다.
-- 한 단어씩 지나가는 속도에서 탭이 가능한가? 대안: 끝난 뒤 전체 문장에서 고르기.
-- Gemma 4 E2B Q4가 단계 지시(이해 → 분석 → 평가)를 따르는가? ctx 2048에 몇 턴까지 들어가는가?
-- 감정적으로 힘든 날에 반대 질문을 건너뛰는 동작이 필요한가?
-- 종료 시점: 고정 턴 수 vs 사용자의 동작.
-- 논문의 대상은 학습하는 초심자(학생)다. BLOOM은 자기 성찰이라 맥락이 다르다. Dewey 전제조건은 그대로 적용되지만, 논문이 인용한 실험 결과(코딩·작문 과제)는 직접 근거가 아니다.
+**3. The person tilts the Pond to choose an area, then presses the bezel.** The Pond highlights the area under the tilt and the bezel press locks it. The Pond then shows one casual opening line, the same every day: "So, how was my day?" The opening is deliberately light. It does not ask for a difficult topic and it does not ask a generated question.
+
+**4. The person talks about their day before the Pond asks anything.** They press the bezel and talk the way they would to a friend. There is no right topic and no minimum length. They press the bezel again when done. While they talk, the Pond shows particles and no text. This step exists because the paper says AI involvement should be minimal at the start: the first material of the session comes from the person, and the first generated question comes only after it.
+
+### Reflecting
+
+**5. The Pond stays quiet for a few seconds before it shows a question.** The Pond shows particles for at least 10 seconds. During this time the Garden transcribes the audio, adds the turn to the session history and writes one question. The paper says immediate answers remove the moment in which a person notices what they have just said, and recommends a small, deliberate friction before output.
+
+**6. The person reads the question and presses the bezel on the word that stands out.** The question is one first-person sentence of at most 25 words, shown one word at a time, as in v1. The word the person marks stays lit and is sent to the Garden as the focus of the next question. This is the point where the casual talk turns into one specific thing to think about, and the person chooses it. The paper suggests letting people highlight parts of a response to find the gap in their own understanding and to feed that back to the system.
+
+**7. The person keeps talking about that same word for two or three turns.** Steps 5 to 7 repeat. Gemma receives the whole session and the marked word, not just the last transcript, so the questions stay on one subject. The questions climb in order: what happened, why it happened, whether the person's judgment was right. The progress bar fills according to the depth reached, not the time spent. This addresses the third prerequisite (persistent consideration) and follows Bloom's levels of understand, analyze and evaluate.
+
+**8. The Pond asks, once, whether the opposite could be true.** The question is "What if the opposite were true about what I just said?" The person says the opposite case out loud. At no point does the Pond agree, praise, summarize or give advice. The paper says models tend to align with what a person already believes and to sound confident, which discourages suspended judgment, and it recommends metacognitive prompts and provocations.
+
+**9. The Pond shows what the person said last time and asks how today compares.** The Pond shows the person's own closing sentence from the previous session in this area, word for word, followed by "How does today fit with that?" It is not an AI summary. This addresses the second and fifth prerequisites: drawing on prior experience and connecting related ideas.
+
+### Ending
+
+**10. The person ends the session by saying one sentence of their own.** When the progress bar is full, the person can choose to end by holding the bezel down. The Pond asks "In one sentence, what do I now think?" The person says it. The Pond replays that sentence as a wordstream and the Garden stores it word for word. The device generates no summary. In Bloom's taxonomy the top level is to create, and here the person does it. The paper warns that a coherent AI summary makes people believe they understood more than they did.
+
+**11. The person puts the Pond back and the Garden plant changes.** The plant for the chosen area grows according to the depth reached in the session. The Garden shows no text and no score. This step is not from the paper. It is our proposal that feedback should reflect the person's own effort rather than AI output.
+
+## Code changes this would need
+
+| Step | Change | Where |
+| --- | --- | --- |
+| 1 | Garden plant display | New |
+| 2 | Wake on lift | Pond firmware, IMU |
+| 3 | Tilt selection, bezel press, four areas, one fixed opening line | Pond firmware; `session.py` |
+| 4 | Bezel press replaces the on-screen record buttons | `main.cpp` |
+| 5 | Minimum delay between receiving the response and showing it | `turn.cpp` |
+| 6 | Record which word was showing at the bezel press; send it with the turn | `wordstream.cpp`; turn request |
+| 7 | Session history, question level per turn, progress bar | `session.py`, `inference.py`; Pond UI |
+| 8 | Rules in the system prompt; one opposite-view turn | `inference.py` |
+| 9 | Store one closing sentence per area per session | Garden, new local storage |
+| 10 | End state; replay of the closing sentence | `session.py`; Pond UI |
+| 11 | Plant growth from session depth | Garden display |
+
+## Placeholders that come from neither source
+
+- The 10-second wait in step 5 and the two or three turns in step 7.
+- The opening line "So, how was my day?"
+- Pressing the bezel to mark a word. The paper only says "highlight parts of responses".
+- Holding the bezel to end, and waking the Pond on lift.
+- Linking to the previous session with a single closing sentence. The paper's example is a knowledge graph.
+
+## Open questions
+
+- Is the Jetson's inference time already long enough to serve as the wait in step 5? This needs measuring.
+- Can a person press the bezel on the right word at wordstream speed? The alternative is to choose from the full sentence after the stream ends.
+- Can Gemma 4 E2B Q4 follow an instruction to raise the question level each turn? How many turns fit in a 2048-token context?
+- Should the opposite-view question be skippable on an emotionally hard day, especially in the emotional support area?
+- How do the four areas change the questions? This proposal uses the same flow for all four.
+- The paper studies novices who are learning (students doing coding and writing tasks). BLOOM is for self-reflection. Dewey's prerequisites apply directly, but the experiments the paper cites are not direct evidence for BLOOM.
