@@ -1,3 +1,5 @@
+**English** | [한국어](README.ko.md)
+
 # Pond
 
 Firmware for the Waveshare ESP32-S3 Touch AMOLED 1.75 (466 × 466 round AMOLED, two

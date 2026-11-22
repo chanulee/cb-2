@@ -1,3 +1,5 @@
+**English** | [한국어](README.ko.md)
+
 # BLOOM
 
 BLOOM is a local-first reflective ritual built from two devices:

@@ -1,3 +1,5 @@
+**English** | [한국어](README.ko.md)
+
 # Bloom 2
 
 Bloom 2 is the working follow-up to [Cognitive Bloom](https://mapprojectoffice.com/work/cognitive-bloom/),
