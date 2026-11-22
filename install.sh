@@ -3,7 +3,7 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/chanulee/cb-2/main/install.sh | bash
 #
-# It downloads this repository to ~/cb-2 (or updates it) and runs v2/garden/install.sh,
+# It downloads this repository to ~/cb-2 (or updates it) and runs garden/install.sh,
 # which installs Garden on the Jetson and flashes the Pond over USB-C.
 set -euo pipefail
 
@@ -12,8 +12,8 @@ BRANCH="${BLOOM_BRANCH:-main}"
 TARGET="${BLOOM_HOME:-$HOME/cb-2}"
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]:-.}")" 2>/dev/null && pwd || true)"
-if [ -n "$here" ] && [ -x "$here/v2/garden/install.sh" ]; then
-    exec "$here/v2/garden/install.sh" "$@"      # already inside a checkout
+if [ -n "$here" ] && [ -x "$here/garden/install.sh" ]; then
+    exec "$here/garden/install.sh" "$@"      # already inside a checkout
 fi
 
 if ! command -v git >/dev/null; then
@@ -26,4 +26,4 @@ else
     echo "Downloading Bloom to $TARGET"
     git clone --depth 1 --branch "$BRANCH" "$REPO_URL" "$TARGET"
 fi
-exec "$TARGET/v2/garden/install.sh" "$@"
+exec "$TARGET/garden/install.sh" "$@"

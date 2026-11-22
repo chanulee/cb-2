@@ -41,13 +41,13 @@ Garden을 다시 시작해야 합니다.
 
 Garden은 `llama.cpp/build/bin/llama-server`, `whisper.cpp/build/bin/whisper-server`,
 `models/`를 `~/.local/share/bloom`, `$BLOOM_SCRATCH_DIR`, `~/.gemini/antigravity/scratch`
-(이전 `garden/g4q4-setup`의 위치) 순서로 찾습니다. 8080이나 8081 포트에서 이미
+(이전 `archive/garden/g4q4-setup`의 위치) 순서로 찾습니다. 8080이나 8081 포트에서 이미
 서버가 응답하고 있으면 새로 띄우지 않고 그 서버를 씁니다.
 
 ## 개발
 
 ```bash
-cd v2/garden
+cd garden
 python3 -m unittest discover -s tests -v    # 모델, GPU, 네트워크가 없어도 됩니다
 python3 -m bloom_garden --mock --open
 ```

@@ -7,9 +7,9 @@ on:
   push:
     branches: [main]
     tags: ["pond-v*"]
-    paths: ["v2/pond/**", ".github/workflows/pond-firmware.yml"]
+    paths: ["pond/**", ".github/workflows/pond-firmware.yml"]
   pull_request:
-    paths: ["v2/pond/**", ".github/workflows/pond-firmware.yml"]
+    paths: ["pond/**", ".github/workflows/pond-firmware.yml"]
   workflow_dispatch:
 
 permissions:
@@ -22,7 +22,7 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: v2/pond/firmware
+        working-directory: pond/firmware
     steps:
       - uses: actions/checkout@v4
       - name: Check that the tag matches version.txt
@@ -41,8 +41,8 @@ jobs:
           name: bloom-pond-firmware
           if-no-files-found: error
           path: |
-            v2/pond/firmware/build/bloom-pond.bin
-            v2/pond/firmware/build/bloom-pond-factory.bin
+            pond/firmware/build/bloom-pond.bin
+            pond/firmware/build/bloom-pond-factory.bin
 
   release:
     if: startsWith(github.ref, 'refs/tags/pond-v')

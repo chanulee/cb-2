@@ -27,7 +27,7 @@ USB-C로 써 넣고, 이후 버전은 Garden이 Wi-Fi로 전달합니다.
 ESP-IDF 5.5 (`release/v5.5` 브랜치)를 씁니다.
 
 ```bash
-cd v2/pond/firmware
+cd pond/firmware
 idf.py build
 idf.py -p /dev/ttyACM0 flash monitor     # USB-C. 기기를 못 찾으면 BOOT를 누른 채로 케이블을 꽂습니다
 ```

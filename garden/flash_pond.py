@@ -30,7 +30,7 @@ REPO = os.environ.get("BLOOM_GITHUB_REPO", "chanulee/cb-2")
 FACTORY_ASSET = "bloom-pond-factory.bin"
 DATA = Path(os.environ.get("BLOOM_DATA_DIR", "~/.local/share/bloom")).expanduser()
 LOCAL_BUILD = Path(__file__).resolve().parents[1] / "pond/firmware/build" / FACTORY_ASSET
-NVS_OFFSET = "0x9000"       # must match v2/pond/firmware/partitions.csv
+NVS_OFFSET = "0x9000"       # must match pond/firmware/partitions.csv
 NVS_SIZE = "0x6000"
 
 
@@ -107,7 +107,7 @@ def ask_wifi(arguments: argparse.Namespace) -> tuple[str, str] | None:
 
 
 def nvs_image(ssid: str, password: str, directory: Path) -> Path:
-    """Build the NVS partition that v2/pond/firmware/main/settings.cpp reads."""
+    """Build the NVS partition that pond/firmware/main/settings.cpp reads."""
     table, image = directory / "nvs.csv", directory / "nvs.bin"
     with table.open("w", newline="") as file:
         writer = csv.writer(file)
@@ -159,7 +159,7 @@ def main() -> int:
             raise OSError(f"{image} is not a firmware image")
     except OSError as error:
         print(f"Could not get the firmware: {error}")
-        print(f"Build it (v2/pond/README.md) or download {FACTORY_ASSET} from the GitHub releases page.")
+        print(f"Build it (pond/README.md) or download {FACTORY_ASSET} from the GitHub releases page.")
         return 1
 
     wifi = ask_wifi(arguments)
