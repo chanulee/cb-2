@@ -1,3 +1,5 @@
+**English** | [한국어](README.ko.md)
+
 # BLOOM
 
 BLOOM is a local-first reflective ritual built from two devices:
@@ -15,6 +17,11 @@ BLOOM is a local-first reflective ritual built from two devices:
 | --- | --- | --- |
 | [`pony/`](pony/) | Dev beta, preserved | The former `pond/` prototype: LILYGO T7-S3 + Mac voice assistant. Its product name is Pony. |
 | [`garden/`](garden/) | Experimental | Existing Jetson/Gemma setup work. |
-| [`v1/`](v1/) | Active | Small proof: Springboard, Wordstream, Particles, Wi-Fi, recorded turn, Garden response. |
+| [`v1/`](v1/) | Proof, preserved | Springboard, Wordstream, Particles, Wi-Fi, recorded turn, Garden response. |
+| [`v2/`](v2/) | Active | Base software: one-line install, double-click Garden, streamed answers, speed-reading display, over-the-air Pond updates. |
 
-Start with [`v1/README.md`](v1/README.md).
+Start with [`v2/README.md`](v2/README.md). To install on a Jetson:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/chanulee/cb-2/main/install.sh | bash
+```

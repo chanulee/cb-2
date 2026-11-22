@@ -20,3 +20,7 @@ sdkconfig.old
 v1/**/.bloom-data/
 v1/**/debug_audio/
 v1/**/*.wav
+
+# Python caches (all generations)
+__pycache__/
+*.py[cod]

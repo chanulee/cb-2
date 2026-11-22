@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Bloom Garden
+Comment=Start the Bloom Garden and open its dashboard
+Exec=@START@@ARGS@
+Icon=@ICON@
+Terminal=false
+Categories=Utility;
+StartupNotify=false
+Actions=Stop;
+
+[Desktop Action Stop]
+Name=Stop Bloom Garden
+Exec=@START@ --stop

@@ -1,0 +1,28 @@
+name: Garden
+
+on:
+  push:
+    branches: [main]
+    paths: ["v2/garden/**", "install.sh", ".github/workflows/garden.yml"]
+  pull_request:
+    paths: ["v2/garden/**", "install.sh", ".github/workflows/garden.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.12"]    # Ubuntu 22.04 (JetPack 6) and 24.04 (JetPack 7)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Unit tests
+        working-directory: v2/garden
+        run: python -m unittest discover -s tests -v
+      - name: Shell script syntax
+        run: bash -n install.sh && bash -n v2/garden/install.sh && bash -n v2/garden/launcher/start.sh
