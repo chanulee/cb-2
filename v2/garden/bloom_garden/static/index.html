@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bloom Garden</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { color-scheme: dark; font: 15px/1.45 Inter, system-ui, sans-serif; background: #0c1110; color: #edf2ef; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 28px; }
+  main { width: min(1040px, 100%); margin: auto; display: grid; gap: 14px; }
+  header { display: flex; align-items: end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h1 { margin: 2px 0 0; font-size: 30px; }
+  h2 { margin: 0 0 12px; font-size: 14px; color: #9fb0ab; font-weight: 600; }
+  .eyebrow { margin: 0; color: #87dfe4; font-size: 11px; letter-spacing: .17em; }
+  .pills { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill { padding: 6px 12px; border: 1px solid #3d4d49; border-radius: 999px; color: #9baaa6; font-size: 13px; }
+  .pill.ready { border-color: #87dfe4; color: #87dfe4; }
+  .pill.loading { border-color: #e6c97a; color: #e6c97a; }
+  .pill.crashed, .pill.missing { border-color: #f0a899; color: #f0a899; }
+  .panel { background: #151c1a; border: 1px solid #2d3a37; border-radius: 16px; padding: 18px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  button, textarea { border: 1px solid #40514d; border-radius: 12px; background: #202927; color: inherit; font: inherit; }
+  button { min-height: 40px; padding: 0 14px; cursor: pointer; font-weight: 650; }
+  button.primary { background: #9de7ed; border-color: #9de7ed; color: #071110; }
+  button:disabled { opacity: .4; cursor: default; }
+  textarea { width: 100%; min-height: 70px; padding: 10px 12px; resize: vertical; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+  .muted { color: #81918c; font-size: 13px; }
+  .warn { color: #f0a899; font-size: 13px; }
+  dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin: 0; font-size: 13px; }
+  dt { color: #81918c; } dd { margin: 0; overflow-wrap: anywhere; }
+  #pond { width: 240px; height: 240px; margin: 4px auto 10px; border-radius: 50%; background: #050707; border: 1px solid #2d3a37;
+          position: relative; overflow: hidden; font: 600 30px Montserrat, Inter, system-ui, sans-serif; }
+  #word { position: absolute; top: 50%; left: 50%; white-space: pre; transform: translateY(-50%); }
+  #word b { color: #9de7ed; font-weight: 600; }
+  #stage { position: absolute; bottom: 44px; width: 100%; text-align: center; font: 12px Inter, system-ui, sans-serif; color: #6f827d; }
+  .turn { border-top: 1px solid #2d3a37; padding: 10px 0; font-size: 13px; }
+  .turn:first-child { border-top: 0; }
+  .turn .said { color: #9fb0ab; }
+  pre { margin: 8px 0 0; max-height: 180px; overflow: auto; white-space: pre-wrap; color: #a9b8b3; font: 11px/1.5 ui-monospace, monospace; }
+  @media (max-width: 760px) { body { padding: 16px; } .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div><p class="eyebrow">BLOOM 2 · GARDEN</p><h1 id="title">Garden</h1></div>
+    <div class="pills">
+      <span id="pill-llm" class="pill">language model</span>
+      <span id="pill-stt" class="pill">speech to text</span>
+      <span id="pill-discovery" class="pill">discovery</span>
+      <button id="quit">Quit Garden</button>
+    </div>
+  </header>
+  <div id="notice" class="warn"></div>
+
+  <section class="grid">
+    <article class="panel">
+      <h2>Try a turn without the Pond</h2>
+      <div id="pond"><span id="word"></span><span id="stage">type below, then Send</span></div>
+      <textarea id="text" placeholder="Type what you would say into the Pond">Today I kept putting off one phone call.</textarea>
+      <div class="row"><button id="send" class="primary">Send</button><button id="forget">Forget conversation</button>
+        <span id="timing" class="muted"></span></div>
+    </article>
+
+    <article class="panel">
+      <h2>Pond</h2>
+      <dl id="ponds"></dl>
+      <h2 style="margin-top:18px">Pond firmware on this Garden</h2>
+      <dl id="firmware"></dl>
+      <div class="row"><button id="fetch">Get latest release from GitHub</button><span id="fetch-result" class="muted"></span></div>
+      <h2 style="margin-top:18px">Models</h2>
+      <dl id="models"></dl>
+      <div class="row"><button id="restart">Restart models</button></div>
+    </article>
+  </section>
+
+  <section class="panel">
+    <h2>Recent turns</h2>
+    <div id="turns" class="muted">No turns yet.</div>
+  </section>
+
+  <section class="panel">
+    <h2>Model logs</h2>
+    <details><summary>language model</summary><pre id="log-llm"></pre></details>
+    <details><summary>speech to text</summary><pre id="log-stt"></pre></details>
+    <p class="muted" id="config"></p>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const escapeHtml = (text) => String(text).replace(/[&<>"]/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const post = (path, body) => fetch(path, {method: "POST", body: JSON.stringify(body || {})});
+let wpm = 270;
+
+// ---- wordstream preview: the same rules as v2/pond/firmware/main/wordstream.cpp ----
+const pivotIndex = (n) => n <= 1 ? 0 : n <= 5 ? 1 : n <= 9 ? 2 : n <= 13 ? 3 : 4;
+const dwell = (word) => (60000 / wpm) * (/[.!?]["')]*$/.test(word) ? 2.2 : /[,;:]$/.test(word) ? 1.5 : word.length > 8 ? 1.3 : 1);
+const queue = []; let partial = "", streaming = false, playing = false;
+
+function showWord(word) {
+  const p = Math.min(pivotIndex(word.length), word.length - 1);
+  const el = $("word");
+  el.innerHTML = `${escapeHtml(word.slice(0, p))}<b>${escapeHtml(word[p])}</b>${escapeHtml(word.slice(p + 1))}`;
+  const pivot = el.querySelector("b");
+  el.style.marginLeft = `${-(pivot.offsetLeft + pivot.offsetWidth / 2)}px`;   // pivot letter stays centred
+}
+function play() {
+  if (playing) return;
+  playing = true;
+  (function next() {
+    if (!queue.length) {
+      playing = false;
+      if (!streaming) { $("word").textContent = ""; $("stage").textContent = "take the time I need"; }
+      else setTimeout(play, 40);
+      return;
+    }
+    const word = queue.shift();
+    showWord(word);
+    setTimeout(next, dwell(word));
+  })();
+}
+function feed(text) {
+  const parts = (partial + text).split(/\s+/);
+  partial = parts.pop();
+  queue.push(...parts.filter(Boolean));
+  play();
+}
+
+async function sendTurn() {
+  $("send").disabled = true; $("timing").textContent = ""; queue.length = 0; partial = ""; streaming = true;
+  $("word").textContent = ""; $("stage").textContent = "thinking";
+  try {
+    const response = await post("/api/text", {text: $("text").value});
+    const reader = response.body.getReader(), decoder = new TextDecoder();
+    let buffer = "";
+    for (;;) {
+      const {value, done} = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, {stream: true});
+      const lines = buffer.split("\n"); buffer = lines.pop();
+      for (const line of lines.filter(Boolean)) {
+        const event = JSON.parse(line);
+        if (event.type === "delta") { $("stage").textContent = ""; feed(event.text); }
+        else if (event.type === "done") $("timing").textContent = `first word ${event.timing.first_word_ms} ms, total ${event.timing.total_ms} ms`;
+        else if (event.type === "error") $("stage").textContent = event.message;
+      }
+    }
+  } catch (error) { $("stage").textContent = String(error); }
+  if (partial) queue.push(partial);
+  partial = ""; streaming = false; play(); $("send").disabled = false; refresh();
+}
+
+function pill(id, label, service) {
+  $(id).className = `pill ${service.state}`;
+  $(id).textContent = `${label}: ${service.state}`;
+  $(id).title = service.detail || "";
+}
+const rows = (pairs) => pairs.map(([k, v]) => `<dt>${escapeHtml(k)}</dt><dd>${escapeHtml(v)}</dd>`).join("");
+
+async function refresh() {
+  let status;
+  try { status = await (await fetch("/api/status")).json(); }
+  catch { $("notice").textContent = "Garden is not running. Double-click the Bloom Garden icon to start it."; return; }
+  wpm = status.wpm;
+  const {llm, stt, discovery, mock} = status.services;
+  $("title").textContent = `Garden on ${status.hostname}`;
+  pill("pill-llm", "language model", llm); pill("pill-stt", "speech to text", stt); pill("pill-discovery", "discovery", discovery);
+  $("notice").textContent = mock ? "Mock mode: answers are canned text and no model is loaded."
+    : status.ready ? "" : [llm, stt].filter((s) => s.state !== "ready").map((s) => s.detail).join(" · ");
+  $("models").innerHTML = rows([["language model", llm.detail], ["speech to text", stt.detail], ["discovery", discovery.detail]]);
+  $("ponds").innerHTML = status.ponds.length
+    ? status.ponds.map((p) => rows([[p.id, `${p.address} · firmware ${p.version || "?"} · seen ${p.age_s}s ago`]])).join("")
+    : rows([["no Pond yet", `A Pond on this Wi-Fi finds Garden by itself. Manual address: ${location.hostname === "127.0.0.1" ? status.hostname + ".local" : location.hostname}:${status.port}`]]);
+  const fw = status.firmware;
+  $("firmware").innerHTML = fw
+    ? rows([["version", fw.version], ["size", `${(fw.size / 1048576).toFixed(2)} MB`], ["build", fw.sha256.slice(0, 12)],
+            ["install", fw.auto_install ? "Pond installs it by itself within a minute" : "Pond asks before installing"]])
+    : rows([["none", "Garden has no Pond firmware yet, so there is nothing to update to."]]);
+  $("turns").innerHTML = status.turns.length ? status.turns.map((t) => `<div class="turn">
+      <div class="said">${escapeHtml(new Date(t.time * 1000).toLocaleTimeString())} · ${escapeHtml(t.device)}${t.audio_s ? ` · ${t.audio_s}s audio` : ""}
+        ${t.timing.total_ms ? ` · first word ${t.timing.first_word_ms} ms${t.timing.stt_ms ? `, speech ${t.timing.stt_ms} ms` : ""}` : ""}</div>
+      <div>&ldquo;${escapeHtml(t.transcript)}&rdquo;</div>
+      <div>${t.error ? `<span class="warn">${escapeHtml(t.error)}</span>` : escapeHtml(t.reply)}</div></div>`).join("") : "No turns yet.";
+  $("log-llm").textContent = llm.log.join("\n"); $("log-stt").textContent = stt.log.join("\n");
+  $("config").textContent = `Settings file: ${status.config_path} · Garden ${status.version} · repo ${status.firmware_repo}`;
+}
+
+$("send").onclick = sendTurn;
+$("forget").onclick = () => post("/api/control/forget");
+$("restart").onclick = () => post("/api/control/restart-models").then(refresh);
+$("quit").onclick = async () => { await post("/api/control/quit"); $("notice").textContent = "Garden stopped. You can close this tab."; };
+$("fetch").onclick = async () => {
+  $("fetch-result").textContent = "downloading…";
+  const result = await (await post("/api/control/fetch-firmware")).json();
+  $("fetch-result").textContent = result.error ? `failed: ${result.error}` : `got ${result.version}`;
+  refresh();
+};
+refresh(); setInterval(refresh, 2000);
+</script>
+</body>
+</html>

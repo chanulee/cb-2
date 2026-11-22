@@ -1,0 +1,62 @@
+name: Pond firmware
+
+# Builds the ESP32-S3 firmware. A tag named pond-vX.Y.Z also publishes the two files
+# the installer and Garden download: the full image for the first USB flash, and the
+# application image for over-the-air updates.
+on:
+  push:
+    branches: [main]
+    tags: ["pond-v*"]
+    paths: ["v2/pond/**", ".github/workflows/pond-firmware.yml"]
+  pull_request:
+    paths: ["v2/pond/**", ".github/workflows/pond-firmware.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: espressif/idf:release-v5.5
+    defaults:
+      run:
+        shell: bash
+        working-directory: v2/pond/firmware
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check that the tag matches version.txt
+        if: startsWith(github.ref, 'refs/tags/pond-v')
+        run: test "pond-v$(cat version.txt)" = "$GITHUB_REF_NAME"
+      - name: Build
+        run: |
+          git config --global --add safe.directory '*'
+          . "$IDF_PATH/export.sh"
+          idf.py build
+          cd build
+          python -m esptool --chip esp32s3 merge_bin -o bloom-pond-factory.bin @flash_args
+          ls -l bloom-pond.bin bloom-pond-factory.bin
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bloom-pond-firmware
+          if-no-files-found: error
+          path: |
+            v2/pond/firmware/build/bloom-pond.bin
+            v2/pond/firmware/build/bloom-pond-factory.bin
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/pond-v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: bloom-pond-firmware
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "$GITHUB_REF_NAME" bloom-pond.bin bloom-pond-factory.bin
+          --repo "$GITHUB_REPOSITORY" --title "Pond firmware ${GITHUB_REF_NAME#pond-v}" --generate-notes
