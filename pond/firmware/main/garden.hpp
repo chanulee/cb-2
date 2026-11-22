@@ -2,7 +2,7 @@
 
 #include <string>
 
-// Finding Garden on the LAN and asking it who it is. Protocol: v2/PROTOCOL.md.
+// Finding Garden on the LAN and asking it who it is. Protocol: PROTOCOL.md.
 namespace bloom::garden {
 
 struct Hello {

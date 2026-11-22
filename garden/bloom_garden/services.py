@@ -85,7 +85,7 @@ class Service:
 
 
 def llm_command(config: dict, binary: Path, model: Path) -> list[str]:
-    """Settings validated on the Orin Nano Super 8 GB in garden/g4q4-setup/run.sh."""
+    """Settings validated on the Orin Nano Super 8 GB in archive/garden/g4q4-setup/run.sh."""
     address = urlparse(config["llm"]["url"])
     return [
         str(binary), "-m", str(model),
@@ -157,7 +157,7 @@ class Services:
         ):
             if binary is None or model is None:
                 missing = what if binary is None else "a model file"
-                service.detail = f"{missing} not found; run v2/garden/install.sh"
+                service.detail = f"{missing} not found; run garden/install.sh"
                 if healthy(service.url):
                     service.detail = f"using the server already running at {service.url}"
                 continue

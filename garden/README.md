@@ -38,13 +38,13 @@ to `~/.config/bloom/system_prompt.txt` and edit the copy. Restart Garden after c
 
 Garden looks for `llama.cpp/build/bin/llama-server`, `whisper.cpp/build/bin/whisper-server`
 and `models/` under `~/.local/share/bloom`, then `$BLOOM_SCRATCH_DIR`, then
-`~/.gemini/antigravity/scratch` (the earlier `garden/g4q4-setup` location). If a
+`~/.gemini/antigravity/scratch` (the earlier `archive/garden/g4q4-setup` location). If a
 server already answers on port 8080 or 8081, Garden uses it and starts nothing.
 
 ## Development
 
 ```bash
-cd v2/garden
+cd garden
 python3 -m unittest discover -s tests -v    # no model, GPU or network needed
 python3 -m bloom_garden --mock --open
 ```

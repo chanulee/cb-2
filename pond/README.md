@@ -26,7 +26,7 @@ The line under the wordstream says what the Pond is waiting for: "Joining Wi-Fi.
 ESP-IDF 5.5 (the `release/v5.5` branch).
 
 ```bash
-cd v2/pond/firmware
+cd pond/firmware
 idf.py build
 idf.py -p /dev/ttyACM0 flash monitor     # USB-C; hold BOOT while plugging in if it is not found
 ```

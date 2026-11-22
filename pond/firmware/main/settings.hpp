@@ -5,7 +5,7 @@
 #include "esp_err.h"
 
 // Everything Pond remembers across power cycles, in the NVS namespace "bloom".
-// The installer can pre-fill ssid/password over USB (v2/garden/flash_pond.py).
+// The installer can pre-fill ssid/password over USB (garden/flash_pond.py).
 namespace bloom::settings {
 
 esp_err_t init();
