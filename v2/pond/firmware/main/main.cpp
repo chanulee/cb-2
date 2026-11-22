@@ -10,6 +10,7 @@
 #include "mic.h"
 #include "network.hpp"
 #include "ota.hpp"
+#include "push.hpp"
 #include "settings.hpp"
 #include "ui.hpp"
 
@@ -19,11 +20,14 @@ constexpr char TAG[] = "pond";
 constexpr gpio_num_t BOOT_BUTTON = GPIO_NUM_0;
 constexpr int64_t CONFIRM_AFTER_US = 60LL * 1000 * 1000;
 
-// Keeps the home screen honest about Wi-Fi and Garden, and installs new firmware.
+// Keeps the home screen honest about Wi-Fi and Garden. Installs new firmware when Garden
+// pushes ("Update Ponds now" in the dashboard), which wakes this task at once.
 void link_task(void *)
 {
     using bloom::ui::Link;
     bool confirmed = false;
+    bool update_requested = false;
+    bloom::push::start(xTaskGetCurrentTaskHandle());
     while (true) {
         Link link = Link::no_wifi;
         bloom::garden::Hello hello;
@@ -44,9 +48,17 @@ void link_task(void *)
         {
             bloom::ui::Lock lock;
             bloom::ui::set_link(link, hello);
-            if (bloom::ui::idle() && bloom::ota::should_auto_install(hello)) bloom::ui::start_update(hello);
+            const bool wanted = update_requested ? bloom::ota::available(hello)
+                                                 : bloom::ota::should_auto_install(hello);
+            if (hello.ok && !bloom::ota::available(hello)) update_requested = false;   // already current
+            if (wanted && bloom::ui::idle()) {
+                update_requested = false;
+                bloom::ui::start_update(hello);
+            }
         }
-        vTaskDelay(pdMS_TO_TICKS(link == Link::ready ? 30000 : 3000));
+        // A pushed update that found the Pond mid-turn is retried every 3 s until it is idle.
+        const uint32_t wait_ms = (link == Link::ready && !update_requested) ? 30000 : 3000;
+        if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(wait_ms)) > 0) update_requested = true;
     }
 }
 

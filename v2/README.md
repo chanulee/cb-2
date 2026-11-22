@@ -65,9 +65,10 @@ wordstream  ◀── one JSON line per ──── {"type":"delta","text":" Wh
   per minute. One letter of each word, slightly left of its middle, is highlighted and
   always drawn at the exact centre of the screen, so the eyes stay still. Words that
   end a sentence stay 2.2 times longer, a comma 1.5 times, long words 1.3 times.
-- **Updates.** Garden holds one Pond firmware image. A Pond that runs a different
-  build downloads it into its spare flash slot and restarts into it. If the new build
-  crashes before it has joined Wi-Fi, the bootloader returns to the previous one.
+- **Updates.** Garden holds one Pond firmware image. Pressing **Update Ponds now** in
+  the dashboard sends each Pond a signal; a Pond that runs a different build then
+  downloads Garden's image into its spare flash slot and restarts into it. If the new
+  build crashes before it has joined Wi-Fi, the bootloader returns to the previous one.
 
 ## Defaults and where to change them
 
@@ -78,7 +79,7 @@ wordstream  ◀── one JSON line per ──── {"type":"delta","text":" Wh
 | What the model is told | First-person inner voice, one question, at most 45 words | `~/.config/bloom/system_prompt.txt` |
 | Reading speed | 270 words per minute | `wpm` in `garden.json` |
 | Memory of the conversation | Last 6 exchanges, forgotten after 20 quiet minutes | `history_turns`, `session_idle_minutes` |
-| Firmware updates | Installed without asking | `firmware.auto_install` |
+| Firmware updates | When you press "Update Ponds now" | `firmware.auto_install: true` makes Ponds install by themselves |
 
 The model choice follows the measurements in [`../garden/g4q4-setup`](../garden/g4q4-setup):
 E2B Q4_K_M runs fully on the Orin Nano Super's GPU and leaves room for speech

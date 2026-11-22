@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Hand a firmware build to Garden. Every Pond on the Wi-Fi then installs it by itself.
+# Hand a firmware build to Garden and have it push the build to every Pond on the Wi-Fi.
 #
 #   ./publish.sh                         on the Jetson itself
 #   ./publish.sh jetson.local TOKEN      from another computer; TOKEN is "upload_token"
@@ -13,6 +13,6 @@ TOKEN="${2:-$(python3 -c 'import json, pathlib; print(json.loads(pathlib.Path("~
 
 [ -f "$IMAGE" ] || { echo "No build at $IMAGE. Run: idf.py build" >&2; exit 1; }
 [ -n "$TOKEN" ] || { echo "No upload token. Pass it as the second argument." >&2; exit 1; }
-curl --fail-with-body --silent --show-error -H "X-Bloom-Token: $TOKEN" \
+curl --fail-with-body --silent --show-error -H "X-Bloom-Token: $TOKEN" -H "X-Bloom-Push: 1" \
     --data-binary "@$IMAGE" "http://$HOST:8765/api/firmware"
 echo

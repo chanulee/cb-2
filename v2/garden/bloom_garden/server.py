@@ -65,6 +65,24 @@ class Garden:
             "opening": self.config["opening"], "firmware": self.firmware_offer(),
         }
 
+    def push_update(self) -> dict:
+        """Tell every Pond seen in the last two minutes to install Garden's firmware now."""
+        offer = self.firmware_offer()
+        if offer is None:
+            raise ValueError("Garden has no Pond firmware to push")
+        results = {}
+        for device, pond in list(self.ponds.items()):
+            if time.time() - pond["seen"] > 120:
+                continue
+            try:
+                request = Request(f"http://{pond['address']}/api/update", data=b"{}", method="POST")
+                with urlopen(request, timeout=5) as response:  # noqa: S310 - address the Pond gave
+                    current = json.load(response).get("sha256") == offer["sha256"]
+                results[device] = "already current" if current else "updating"
+            except (URLError, OSError, ValueError):
+                results[device] = "did not answer"
+        return {"version": offer["version"], "ponds": results}
+
     def status(self) -> dict:
         return {
             "version": __version__, "uptime_s": int(time.time() - self.started),
@@ -201,7 +219,10 @@ class Handler(BaseHTTPRequestHandler):
                     self.close_connection = True    # the unread body must not be parsed as a request
                     self.send_json({"error": "wrong upload token"}, HTTPStatus.FORBIDDEN)
                     return
-                self.send_json(self.garden.firmware.save(self.read_body(MAX_IMAGE_BYTES)))
+                saved = self.garden.firmware.save(self.read_body(MAX_IMAGE_BYTES))
+                if self.headers.get("X-Bloom-Push") == "1":
+                    saved["pushed"] = self.garden.push_update()["ponds"]
+                self.send_json(saved)
             elif path.startswith("/api/control/"):
                 self.control(path.rsplit("/", 1)[1])
             else:
@@ -231,6 +252,8 @@ class Handler(BaseHTTPRequestHandler):
         elif action == "forget":
             garden.sessions.reset()
             self.send_json({"ok": True})
+        elif action == "push-firmware":
+            self.send_json(garden.push_update())
         elif action == "fetch-firmware":
             self.send_json(garden.firmware.fetch_release(garden.config["firmware"]["github_repo"]))
         else:

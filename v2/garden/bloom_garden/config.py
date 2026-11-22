@@ -38,8 +38,9 @@ DEFAULTS: dict = {
         "extra_args": [],
     },
     "firmware": {
-        # Pond installs a different build found on Garden without asking.
-        "auto_install": True,
+        # false: a Pond updates when Garden pushes ("Update Ponds now", publish.sh).
+        # true: a Pond also installs a different build by itself at its next check-in.
+        "auto_install": False,
         "github_repo": "chanulee/cb-2",
     },
     "upload_token": "",

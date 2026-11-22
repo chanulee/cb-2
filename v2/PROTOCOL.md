@@ -30,7 +30,10 @@ Request headers: `X-Bloom-Device: pond-a1b2c3`, `X-Bloom-Version: 0.1.0`.
 `ready` is false while the models load; the Pond then shows "Garden is loading its
 models" and does not record. `firmware` is `null` when Garden holds no image.
 `sha256` is the ELF hash inside the image (`esp_app_desc_t.app_elf_sha256`). The Pond
-compares it with its own; if they differ, Garden's build is installed.
+compares it with its own; if they differ, Garden's build can be installed. That
+happens when Garden pushes (below), or at this check-in when `auto_install` is true.
+
+Garden remembers the address each hello came from. That is how it reaches the Pond.
 
 ## `POST /api/turn`
 
@@ -66,9 +69,20 @@ curl -N -X POST -d '{"text":"I kept putting off a call."}' http://jetson.local:8
 
 - `GET /firmware/pond.bin` returns the application image (`build/bloom-pond.bin`).
 - `POST /api/firmware` with header `X-Bloom-Token` and the image as body replaces it.
-  The token is `upload_token` in `~/.config/bloom/garden.json`.
+  The token is `upload_token` in `~/.config/bloom/garden.json`. Adding the header
+  `X-Bloom-Push: 1` also pushes it to the Ponds.
+
+The Pond listens on port 80 for the push:
+
+- `POST http://<pond>/api/update` makes the Pond ask `/api/hello` at once and install
+  Garden's build if it differs from its own. A Pond that is mid-turn installs as soon
+  as it is idle. The call carries no firmware and no URL: the image always comes from
+  the Garden the Pond already uses. Answer: `{"id":"pond-a1b2c3","version":"0.1.0","sha256":"…"}`.
+- `GET http://<pond>/api/info` returns the same object.
+
+Garden sends the push to every Pond that said hello in the last two minutes.
 
 ## Dashboard
 
 `GET /` and `GET /api/status` serve the dashboard. `POST /api/control/{quit,
-restart-models,forget,fetch-firmware}` are accepted from the Jetson itself only.
+restart-models,forget,fetch-firmware,push-firmware}` are accepted from the Jetson itself only.

@@ -41,26 +41,24 @@ idf.py build
 ../publish.sh jetson.local TOKEN    # from a laptop; TOKEN is upload_token in garden.json
 ```
 
-`publish.sh` uploads `build/bloom-pond.bin` to Garden. Each Pond asks Garden every
-30 seconds which build it holds; a Pond running another build shows "Updating to …",
-writes the image to its spare slot and restarts. That takes about a minute.
+`publish.sh` uploads `build/bloom-pond.bin` to Garden, and Garden pushes it: each Pond
+shows "Updating to …", writes the image to its spare slot and restarts. That takes
+about a minute.
 
 For everyone else: push a tag `pond-vX.Y.Z` that matches `firmware/version.txt`. CI
-builds it and publishes a GitHub release. On the Jetson, "Get latest release from
-GitHub" in the dashboard (or running `install.sh` again) fetches it, and the Ponds
-update.
+builds it and publishes a GitHub release. In the dashboard on the Jetson, press "Get
+latest release from GitHub", then **Update Ponds now**.
+
+A Pond never updates on its own unless `"firmware": {"auto_install": true}` is set in
+`garden.json`. Pond Settings also has an "Update to …" button.
 
 Safety:
 
 - Two 6 MB app slots (`partitions.csv`); the running one is never overwritten.
 - A new build must join Wi-Fi, or run for a minute, before it is kept. If it resets
   before that, the bootloader boots the previous build.
-- A build that was rolled back is not installed again automatically. Settings →
-  "Update to …" forces it.
-
-When you flash over USB while Garden holds an older build, the Pond would install
-Garden's build again. Run `publish.sh` after flashing, or set
-`"firmware": {"auto_install": false}` in `garden.json` while developing.
+- With `auto_install`, a build that was rolled back is not installed again by itself.
+  A push or Settings → "Update to …" still installs it.
 
 ## Source
 
@@ -73,6 +71,7 @@ Garden's build again. Run `publish.sh` after flashing, or set
 | `mic.c` | ES7210 at 16 kHz, both microphones averaged to mono |
 | `garden.cpp` | mDNS discovery and `/api/hello` |
 | `ota.cpp` | download, flash, confirm or roll back |
+| `push.cpp` | port 80 listener for Garden's "update now" signal |
 | `network.cpp`, `settings.cpp` | Wi-Fi and stored settings (NVS namespace `bloom`) |
 
 ## First run on real hardware

@@ -70,7 +70,8 @@
       <dl id="ponds"></dl>
       <h2 style="margin-top:18px">Pond firmware on this Garden</h2>
       <dl id="firmware"></dl>
-      <div class="row"><button id="fetch">Get latest release from GitHub</button><span id="fetch-result" class="muted"></span></div>
+      <div class="row"><button id="push" class="primary">Update Ponds now</button><button id="fetch">Get latest release from GitHub</button></div>
+      <div id="fetch-result" class="muted" style="margin-top:8px"></div>
       <h2 style="margin-top:18px">Models</h2>
       <dl id="models"></dl>
       <div class="row"><button id="restart">Restart models</button></div>
@@ -178,7 +179,7 @@ async function refresh() {
   const fw = status.firmware;
   $("firmware").innerHTML = fw
     ? rows([["version", fw.version], ["size", `${(fw.size / 1048576).toFixed(2)} MB`], ["build", fw.sha256.slice(0, 12)],
-            ["install", fw.auto_install ? "Pond installs it by itself within a minute" : "Pond asks before installing"]])
+            ["install", fw.auto_install ? "Ponds install it by themselves at their next check-in" : "when you press Update Ponds now"]])
     : rows([["none", "Garden has no Pond firmware yet, so there is nothing to update to."]]);
   $("turns").innerHTML = status.turns.length ? status.turns.map((t) => `<div class="turn">
       <div class="said">${escapeHtml(new Date(t.time * 1000).toLocaleTimeString())} · ${escapeHtml(t.device)}${t.audio_s ? ` · ${t.audio_s}s audio` : ""}
@@ -193,6 +194,13 @@ $("send").onclick = sendTurn;
 $("forget").onclick = () => post("/api/control/forget");
 $("restart").onclick = () => post("/api/control/restart-models").then(refresh);
 $("quit").onclick = async () => { await post("/api/control/quit"); $("notice").textContent = "Garden stopped. You can close this tab."; };
+$("push").onclick = async () => {
+  $("fetch-result").textContent = "sending…";
+  const result = await (await post("/api/control/push-firmware")).json();
+  const ponds = Object.entries(result.ponds || {});
+  $("fetch-result").textContent = result.error ? `failed: ${result.error}`
+    : ponds.length ? ponds.map(([id, state]) => `${id}: ${state}`).join(" · ") : "No Pond has checked in during the last two minutes.";
+};
 $("fetch").onclick = async () => {
   $("fetch-result").textContent = "downloading…";
   const result = await (await post("/api/control/fetch-firmware")).json();

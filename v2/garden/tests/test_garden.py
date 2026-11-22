@@ -201,10 +201,43 @@ class ServerTests(unittest.TestCase):
         self.assertEqual((status, json.loads(data)["version"]), (200, "0.9.0"))
         offer = json.loads(request(self.base, "GET", "/api/hello")[1])["firmware"]
         self.assertEqual((offer["version"], offer["url"], offer["size"]), ("0.9.0", "/firmware/pond.bin", len(image)))
+        self.assertFalse(offer["auto_install"])
         self.assertEqual(request(self.base, "GET", "/firmware/pond.bin")[1], image)
         status, data = request(self.base, "POST", "/api/firmware", b"junk" * 100,
                                {"X-Bloom-Token": self.config["upload_token"]})
         self.assertEqual(status, 400)
+
+    def test_push_tells_recent_ponds_to_update(self):
+        class FakePond(BaseHTTPRequestHandler):
+            calls = []
+
+            def do_POST(self):  # noqa: N802
+                FakePond.calls.append(self.path)
+                body = b'{"id":"pond-test","version":"0.1.0","sha256":"00"}'
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *args):
+                pass
+
+        pond, pond_base = serve(FakePond)
+        self.addCleanup(pond.server_close)
+        self.addCleanup(pond.shutdown)
+        self.garden.firmware.save(fake_image("0.9.1"))
+        now = __import__("time").time()
+        self.garden.ponds.clear()
+        self.garden.ponds["pond-test"] = {"address": pond_base.removeprefix("http://"), "version": "0.1.0", "seen": now}
+        self.garden.ponds["pond-gone"] = {"address": "127.0.0.1:9", "version": "0.1.0", "seen": now}
+        self.garden.ponds["pond-old"] = {"address": "127.0.0.1:9", "version": "0.1.0", "seen": now - 600}
+        result = self.garden.push_update()
+        self.assertEqual(result["ponds"], {"pond-test": "updating", "pond-gone": "did not answer"})
+        self.assertEqual(FakePond.calls, ["/api/update"])
+        # Uploading with X-Bloom-Push does the same in one request (publish.sh).
+        status, data = request(self.base, "POST", "/api/firmware", fake_image("0.9.2"),
+                               {"X-Bloom-Token": self.config["upload_token"], "X-Bloom-Push": "1"})
+        self.assertEqual((status, json.loads(data)["pushed"]["pond-test"]), (200, "updating"))
 
     def test_dashboard_and_path_traversal(self):
         status, data = request(self.base, "GET", "/")
